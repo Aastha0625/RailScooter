@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
 import '../../models/geofence.dart';
+import '../../models/vehicle_location.dart';
 import '../../services/api_service.dart';
 
 class GeofenceTrackingScreen extends StatefulWidget {

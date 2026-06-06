@@ -1,8 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/vehicle.dart';
 import '../models/department.dart';
+import '../models/user.dart';
 import '../models/alert_rule.dart';
+import '../models/vehicle_alert.dart';
 import '../models/geofence.dart';
+import '../models/vehicle_location.dart';
+
 
 class ApiService {
   static final SupabaseClient _db = Supabase.instance.client;

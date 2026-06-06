@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../models/user.dart';
 import '../../models/department.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';

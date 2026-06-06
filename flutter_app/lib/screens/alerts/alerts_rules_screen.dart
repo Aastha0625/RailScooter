@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../models/alert_rule.dart';
+import '../../models/vehicle_alert.dart';
 import '../../services/api_service.dart';
-import 'package:intl/intl.dart';
 
 class AlertsRulesScreen extends StatefulWidget {
   const AlertsRulesScreen({super.key});

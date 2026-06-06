@@ -48,35 +48,4 @@ class Department {
   };
 }
 
-class AppUser {
-  final String id;
-  final String fullName;
-  final String? employeeId;
-  final String role;
-  final String? departmentId;
-  final String? departmentName;
-  final String phone;
-  final bool isActive;
-
-  const AppUser({
-    required this.id,
-    required this.fullName,
-    this.employeeId,
-    required this.role,
-    this.departmentId,
-    this.departmentName,
-    required this.phone,
-    required this.isActive,
-  });
-
-  factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
-    id: json['id'] ?? '',
-    fullName: json['full_name'] ?? '',
-    employeeId: json['employee_id'],
-    role: json['role'] ?? 'operator',
-    departmentId: json['department_id'],
-    departmentName: json['departments']?['name'],
-    phone: json['phone'] ?? '',
-    isActive: json['is_active'] ?? true,
-  );
-}
+// AppUser has been moved to models/user.dart
