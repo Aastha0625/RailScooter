@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Central place for all app-wide constants.
@@ -13,8 +14,20 @@ class AppConstants {
   /// WebSocket endpoint for real-time tracking updates.
   /// Use 10.0.2.2 for Android emulator (maps to host machine localhost).
   /// Use your server IP / domain when running on a physical device.
-  static const String backendWsUrl = 'ws://10.0.2.2:3000/ws';
-  static const String backendHttpUrl = 'http://10.0.2.2:3000';
+  static String get backendHttpUrl {
+    const configured = String.fromEnvironment('BACKEND_HTTP_URL');
+    if (configured.isNotEmpty) return configured;
+    if (kIsWeb) return 'http://localhost:3000';
+    return defaultTargetPlatform == TargetPlatform.android
+        ? 'http://10.0.2.2:3000'
+        : 'http://localhost:3000';
+  }
+
+  static String get backendWsUrl {
+    const configured = String.fromEnvironment('BACKEND_WS_URL');
+    if (configured.isNotEmpty) return configured;
+    return '${backendHttpUrl.replaceFirst('http', 'ws')}/ws';
+  }
 
   // ── Map defaults ──────────────────────────────────────────────────────────
   /// Default map center (New Delhi) used when no live vehicles are available.

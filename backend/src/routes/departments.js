@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 const { getRedis, CACHE_TTL } = require('../config/redis');
 
 router.get('/', async (req, res) => {
   try {
-    const cacheKey = 'departments:all';
+    const cacheKey = `user:${req.user.id}:departments:all`;
     const redis = getRedis();
     try {
       const cached = await redis.get(cacheKey);
@@ -38,7 +38,7 @@ router.post('/', async (req, res) => {
       .single();
 
     if (error) throw error;
-    try { await getRedis().del('departments:all'); } catch (_) {}
+    try { await getRedis().del(`user:${req.user.id}:departments:all`); } catch (_) {}
     res.status(201).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -51,7 +51,7 @@ router.put('/:id', async (req, res) => {
     delete updates.id;
     const { data, error } = await supabase.from('departments').update(updates).eq('id', req.params.id).select().single();
     if (error) throw error;
-    try { await getRedis().del('departments:all'); } catch (_) {}
+    try { await getRedis().del(`user:${req.user.id}:departments:all`); } catch (_) {}
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -62,7 +62,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const { error } = await supabase.from('departments').delete().eq('id', req.params.id);
     if (error) throw error;
-    try { await getRedis().del('departments:all'); } catch (_) {}
+    try { await getRedis().del(`user:${req.user.id}:departments:all`); } catch (_) {}
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

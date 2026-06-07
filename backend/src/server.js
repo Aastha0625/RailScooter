@@ -13,6 +13,7 @@ const assignmentRoutes = require('./routes/assignments');
 const alertRoutes = require('./routes/alerts');
 const trackingRoutes = require('./routes/tracking');
 const statsRoutes = require('./routes/stats');
+const { authenticate } = require('./middleware');
 
 const app = express();
 const server = http.createServer(app);
@@ -43,6 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'PiScoot API', timestamp: new Date() }));
 
+app.use('/api', authenticate);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/users', userRoutes);

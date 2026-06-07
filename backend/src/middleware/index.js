@@ -1,13 +1,3 @@
-/**
- * middleware/index.js
- *
- * Barrel file for all Express middleware.
- * Add auth, rateLimiter, errorHandler here as they are implemented.
- */
+const { authenticate } = require('./authenticate');
 
-// Placeholder — middleware implementations will be added here:
-// const { authenticate } = require('./auth');
-// const { rateLimiter } = require('./rateLimiter');
-// const { errorHandler } = require('./errorHandler');
-
-module.exports = {};
+module.exports = { authenticate };

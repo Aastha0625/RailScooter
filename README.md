@@ -5,8 +5,9 @@ Complete fleet management system for railway scooters with real-time GPS trackin
 ## Architecture
 
 - **Frontend**: Flutter mobile app (iOS/Android)
-- **Backend**: Node.js + Express REST API
+- **Backend**: Node.js + Express REST API for all fleet data
 - **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
 - **Cache**: Redis (optional, for real-time tracking)
 - **Maps**: OpenStreetMap (Flutter app)
 
@@ -145,7 +146,7 @@ project/
 │   │   │   ├── alert_rule.dart
 │   │   │   └── geofence.dart
 │   │   ├── services/
-│   │   │   └── api_service.dart     # Supabase client & queries
+│   │   │   └── api_service.dart     # Authenticated Express API client
 │   │   └── screens/
 │   │       ├── auth/login_screen.dart
 │   │       ├── dashboard/dashboard_screen.dart
@@ -206,6 +207,17 @@ await Supabase.initialize(
   url: 'https://bvulcwtjlkpghabhwhkl.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
 );
+```
+
+Flutter uses Supabase directly only for authentication. Fleet data requests go
+through the Express backend and include the current Supabase access token.
+
+The default backend URL is `http://10.0.2.2:3000` on an Android emulator and
+`http://localhost:3000` on web and desktop. Override it for physical devices or
+deployed environments:
+
+```bash
+flutter run --dart-define=BACKEND_HTTP_URL=http://192.168.1.10:3000
 ```
 
 ## API Endpoints
@@ -314,7 +326,8 @@ flutter run
 - Tracking updates cache every 5 seconds
 - Department list cached 5 minutes
 - Dashboard stats cached 1 minute
-- All API calls use Supabase RLS for security
+- Express forwards the authenticated user's Supabase token, so database access
+  remains protected by RLS
 
 ## Security
 
@@ -322,7 +335,8 @@ flutter run
 - All database tables have RLS enabled
 - Users can only access their own department's data
 - Backend uses anon key (client-side auth enforced by RLS)
-- Flutter app connects directly to Supabase with user tokens
+- Flutter uses Supabase directly only for authentication
+- Flutter sends the Supabase access token to Express for fleet API requests
 
 ## Next Steps
 

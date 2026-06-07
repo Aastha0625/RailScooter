@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 const { getRedis, CACHE_TTL } = require('../config/redis');
 
 // GET /api/tracking/live - latest position of all active vehicles (Redis cached)
 router.get('/live', async (req, res) => {
   try {
-    const cacheKey = 'tracking:live';
+    const cacheKey = `user:${req.user.id}:tracking:live`;
     const redis = getRedis();
 
     try {
@@ -41,26 +41,6 @@ router.get('/live', async (req, res) => {
   }
 });
 
-// GET /api/tracking/:vehicleId/history
-router.get('/:vehicleId/history', async (req, res) => {
-  try {
-    const { hours = 24 } = req.query;
-    const since = new Date(Date.now() - parseInt(hours) * 3600000).toISOString();
-
-    const { data, error } = await supabase
-      .from('vehicle_tracking')
-      .select('*')
-      .eq('vehicle_id', req.params.vehicleId)
-      .gte('recorded_at', since)
-      .order('recorded_at', { ascending: true });
-
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // POST /api/tracking - ingest new tracking point
 router.post('/', async (req, res) => {
   try {
@@ -80,8 +60,8 @@ router.post('/', async (req, res) => {
     // Cache the latest position in Redis (fast lookup)
     try {
       const redis = getRedis();
-      await redis.setex(`vehicle:location:${vehicle_id}`, CACHE_TTL.TRACKING, JSON.stringify(data));
-      await redis.del('tracking:live');
+      await redis.setex(`user:${req.user.id}:vehicle:location:${vehicle_id}`, CACHE_TTL.TRACKING, JSON.stringify(data));
+      await redis.del(`user:${req.user.id}:tracking:live`);
     } catch (_) {}
 
     res.status(201).json(data);
@@ -140,6 +120,26 @@ router.delete('/geofences/:id', async (req, res) => {
     const { error } = await supabase.from('geofences').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/tracking/:vehicleId/history
+router.get('/:vehicleId/history', async (req, res) => {
+  try {
+    const { hours = 24 } = req.query;
+    const since = new Date(Date.now() - parseInt(hours) * 3600000).toISOString();
+
+    const { data, error } = await supabase
+      .from('vehicle_tracking')
+      .select('*')
+      .eq('vehicle_id', req.params.vehicleId)
+      .gte('recorded_at', since)
+      .order('recorded_at', { ascending: true });
+
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

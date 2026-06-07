@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 const { getRedis, CACHE_TTL } = require('../config/redis');
 
 // GET /api/vehicles - list with filters
 router.get('/', async (req, res) => {
   try {
     const { status, variant, search, page = 1, limit = 20 } = req.query;
-    const cacheKey = `vehicles:${JSON.stringify(req.query)}`;
+    const cacheKey = `user:${req.user.id}:vehicles:${JSON.stringify(req.query)}`;
 
     const redis = getRedis();
     try {
@@ -15,7 +15,14 @@ router.get('/', async (req, res) => {
       if (cached) return res.json(JSON.parse(cached));
     } catch (_) {}
 
-    let allQuery = supabase.from('vehicles').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    let allQuery = supabase.from('vehicles').select(`
+      *,
+      vehicle_assignments(
+        id, is_active, assigned_at,
+        departments(id, name, code),
+        app_users!vehicle_assignments_assigned_user_id_fkey(id, full_name, employee_id)
+      )
+    `, { count: 'exact' }).order('created_at', { ascending: false });
     if (status) allQuery = allQuery.eq('status', status);
     if (variant) allQuery = allQuery.ilike('variant', `%${variant}%`);
     if (search) allQuery = allQuery.or(`vehicle_id.ilike.%${search}%,variant.ilike.%${search}%`);
@@ -48,7 +55,7 @@ router.get('/:id', async (req, res) => {
         vehicle_assignments(
           id, is_active, assigned_at, notes,
           departments(id, name, code, location),
-          app_users(id, full_name, employee_id, role, phone)
+          app_users!vehicle_assignments_assigned_user_id_fkey(id, full_name, employee_id, role, phone)
         ),
         vehicle_tracking(latitude, longitude, speed_kmh, battery_percent, recorded_at)
       `)
@@ -92,7 +99,7 @@ router.post('/', async (req, res) => {
     if (error) throw error;
 
     // Invalidate cache
-    try { await getRedis().del('vehicles:{}'); } catch (_) {}
+    try { await getRedis().del(`user:${req.user.id}:vehicles:{}`); } catch (_) {}
 
     res.status(201).json(data);
   } catch (err) {

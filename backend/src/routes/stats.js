@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
+const { supabase } = require('../config/supabase');
 const { getRedis, CACHE_TTL } = require('../config/redis');
 
 // GET /api/stats - dashboard summary stats
 router.get('/', async (req, res) => {
   try {
-    const cacheKey = 'stats:dashboard';
+    const cacheKey = `user:${req.user.id}:stats:dashboard`;
     const redis = getRedis();
 
     try {
