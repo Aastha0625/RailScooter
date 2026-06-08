@@ -24,6 +24,10 @@ class _LoginScreenState extends State<LoginScreen> {
   String _selectedRole = 'Trackman';
   final List<String> _roles = ['Admin', 'Manager', 'Trackman'];
 
+  // Theme Constants matching Welcome Screen
+  final Color bgColor = const Color(0xFF0A1118);
+  final Color glowColor = const Color(0xFFF97316);
+
   @override
   void initState() {
     super.initState();
@@ -126,7 +130,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: bgColor,
+      extendBodyBehindAppBar: true, // Let the background grid go behind the appbar
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -135,18 +140,48 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              _buildHeader(),
-              const SizedBox(height: 40),
-              _buildGlassmorphicFormCard(),
-            ],
+      body: Stack(
+        children: [
+          // Background grid/line effect
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _GridPainter(),
+            ),
           ),
-        ),
+          // Subtle center glow
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.2,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.05),
+                    blurRadius: 150,
+                    spreadRadius: 50,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Main Content
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  _buildHeader(),
+                  const SizedBox(height: 40),
+                  _buildGlassmorphicFormCard(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -154,35 +189,34 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: AppColors.accent,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 8)
-              ),
-            ],
+        Center(
+          child: Transform.scale(
+            scale: 3.2, // Doubled from 1.6
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 60, 
+              fit: BoxFit.fitHeight, 
+            ),
           ),
-          child: const Icon(Icons.electric_scooter, color: Colors.white, size: 40),
         ),
-        const SizedBox(height: 20),
-        Text(_isSignUp ? 'Create Account' : 'Welcome Back',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-            )),
+        const SizedBox(height: 32),
+        Text(
+          _isSignUp ? 'Create Account' : 'Welcome Back',
+          style: const TextStyle(
+            color: Color(0xFFE2E8F0),
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 8),
-        Text(_isSignUp ? 'Register for fleet access' : 'Sign in to manage your fleet',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            )),
+        Text(
+          _isSignUp ? 'Register for fleet access' : 'Sign in to manage your fleet',
+          style: const TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 16,
+          ),
+        ),
       ],
     );
   }
@@ -195,9 +229,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Form(
             key: _formKey,
@@ -260,25 +294,47 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
                 
-                SizedBox(
+                Container(
                   width: double.infinity,
-                  height: 54,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: glowColor.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
+                      backgroundColor: glowColor,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                     child: _loading
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(_isSignUp ? 'Sign Up' : 'Sign In as $_selectedRole', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _isSignUp ? 'Sign Up' : 'Sign In as $_selectedRole', 
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF431407))
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward, color: Color(0xFF431407), size: 20),
+                            ],
+                          ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 Center(
-                  child: TextButton(
-                    onPressed: () {
+                  child: GestureDetector(
+                    onTap: () {
                       setState(() {
                         _isSignUp = !_isSignUp;
                         _error = null;
@@ -287,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     child: Text(
                       _isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up',
-                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                   ),
                 )
@@ -302,8 +358,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildRoleSelector() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.2),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -320,18 +377,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.accent : Colors.transparent,
+                  color: isSelected ? glowColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: isSelected
-                      ? [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                      ? [BoxShadow(color: glowColor.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))]
                       : [],
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   role,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white60,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected ? const Color(0xFF431407) : Colors.white60,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                     fontSize: 14,
                   ),
                 ),
@@ -357,21 +414,21 @@ class _LoginScreenState extends State<LoginScreen> {
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white60),
-        prefixIcon: Icon(icon, color: Colors.white60, size: 20),
+        labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: Icon(icon, color: Colors.white54, size: 20),
         filled: true,
-        fillColor: Colors.black.withValues(alpha: 0.2),
+        fillColor: Colors.black.withValues(alpha: 0.25),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: BorderSide(color: glowColor, width: 1.5),
         ),
       ),
       validator: (v) {
@@ -382,4 +439,32 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
   }
+}
+
+// Custom Painter for the faint vertical center line and subtle dots (reused from welcome screen)
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.03)
+      ..strokeWidth = 1.0;
+
+    // Faint vertical center line
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, size.height),
+      paint,
+    );
+
+    // Subtle background dots
+    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.05);
+    for (double x = 0; x < size.width; x += 40) {
+      for (double y = 0; y < size.height; y += 40) {
+        canvas.drawCircle(Offset(x, y), 0.5, dotPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

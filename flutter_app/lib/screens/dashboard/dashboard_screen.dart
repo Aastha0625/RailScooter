@@ -54,23 +54,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
+            padding: const EdgeInsets.only(right: 32),
+            child: Center(
+              child: Transform.scale(
+                scale: 6.0, // Increased size as requested
+                child: Image.asset(
+                  'assets/images/logo.png',
                   height: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Center(
-                    child: Text('PS', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-                  ),
+                  fit: BoxFit.contain,
                 ),
-                const SizedBox(width: 6),
-                const Text('PiSolve', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-              ],
+              ),
             ),
           ),
         ],
@@ -340,18 +333,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: const BoxDecoration(color: AppColors.primary),
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.electric_scooter, color: Colors.white, size: 28),
+                Transform.scale(
+                  scale: 2.5,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 48,
+                    fit: BoxFit.contain,
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 24),
                 const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text('PiSolve', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                     Text('Fleet Management', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ],
                 ),

@@ -193,8 +193,8 @@ Geofences:    Main Station, Platform A Depot, Maintenance Bay
 
 ### Backend (`backend/.env`)
 ```
-SUPABASE_URL=https://bvulcwtjlkpghabhwhkl.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_URL=https://mskizgdxpcuuqzjlblou.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5c...
 REDIS_URL=redis://localhost:6379
 PORT=3000
 JWT_SECRET=piscoot_jwt_secret_2024
@@ -204,8 +204,8 @@ JWT_SECRET=piscoot_jwt_secret_2024
 Hardcoded in `lib/main.dart` (same Supabase project):
 ```dart
 await Supabase.initialize(
-  url: 'https://bvulcwtjlkpghabhwhkl.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  url: 'https://mskizgdxpcuuqzjlblou.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1za2l6Z2R4cGN1dXF6amxibG91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDk0NzgsImV4cCI6MjA5NjQ4NTQ3OH0.gwAKQFhfeLMLUh4I1L4UUORv8hVQ1HzNvLTGQvs4ib4',
 );
 ```
 
