@@ -107,10 +107,13 @@ BEGIN
       NEW.raw_user_meta_data->>'full_name',
       split_part(NEW.email, '@', 1)
     ),
-    CASE
-      WHEN EXISTS (SELECT 1 FROM public.app_users) THEN 'trackman'
-      ELSE 'admin'
-    END,
+    COALESCE(
+      NEW.raw_user_meta_data->>'role',
+      CASE
+        WHEN EXISTS (SELECT 1 FROM public.app_users) THEN 'trackman'
+        ELSE 'admin'
+      END
+    ),
     true
   )
   ON CONFLICT (id) DO NOTHING;
@@ -425,7 +428,13 @@ DROP POLICY "vehicles_insert" ON public.vehicles;
 DROP POLICY "vehicles_update" ON public.vehicles;
 DROP POLICY "vehicles_delete" ON public.vehicles;
 CREATE POLICY "vehicles_select" ON public.vehicles FOR SELECT TO authenticated
-  USING (public.can_access_vehicle(id));
+  USING (
+    public.can_access_vehicle(id)
+    OR EXISTS (
+      SELECT 1 FROM public.vehicle_assignments
+      WHERE vehicle_id = public.vehicles.id AND assigned_user_id = auth.uid()
+    )
+  );
 CREATE POLICY "vehicles_insert" ON public.vehicles FOR INSERT TO authenticated
   WITH CHECK (public.is_fleet_manager());
 CREATE POLICY "vehicles_update" ON public.vehicles FOR UPDATE TO authenticated
@@ -438,7 +447,10 @@ DROP POLICY "assignments_insert" ON public.vehicle_assignments;
 DROP POLICY "assignments_update" ON public.vehicle_assignments;
 DROP POLICY "assignments_delete" ON public.vehicle_assignments;
 CREATE POLICY "assignments_select" ON public.vehicle_assignments FOR SELECT TO authenticated
-  USING (public.can_access_vehicle(vehicle_id));
+  USING (
+    public.can_access_vehicle(vehicle_id)
+    OR assigned_user_id = auth.uid()
+  );
 CREATE POLICY "assignments_insert" ON public.vehicle_assignments FOR INSERT TO authenticated
   WITH CHECK (public.is_fleet_manager());
 CREATE POLICY "assignments_update" ON public.vehicle_assignments FOR UPDATE TO authenticated

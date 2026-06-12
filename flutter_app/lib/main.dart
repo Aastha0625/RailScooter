@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/welcome_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
+import 'screens/auth/role_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +48,8 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) return const DashboardScreen();
+    // Route dynamically based on role if logged in
+    if (session != null) return const RoleRouter();
     return const WelcomeScreen();
   }
 }

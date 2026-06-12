@@ -55,7 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
         final response = await Supabase.instance.client.auth.signUp(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
-          data: {'full_name': _emailCtrl.text.trim().split('@')[0]},
+          data: {
+            'full_name': _emailCtrl.text.trim().split('@')[0],
+            'role': _selectedRole.toLowerCase(),
+          },
         );
         
         if (mounted) {
@@ -238,8 +241,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!_isSignUp) _buildRoleSelector(),
-                if (!_isSignUp) const SizedBox(height: 30),
+                _buildRoleSelector(),
+                const SizedBox(height: 30),
                 
                 if (_error != null) ...[
                   Container(
@@ -337,6 +340,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     onTap: () {
                       setState(() {
                         _isSignUp = !_isSignUp;
+                        if (_isSignUp && _selectedRole == 'Admin') {
+                          _selectedRole = 'Trackman'; // Reset if Admin is selected when switching to Sign Up
+                        }
                         _error = null;
                         _message = null;
                       });
@@ -356,6 +362,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildRoleSelector() {
+    final availableRoles = _isSignUp 
+        ? _roles.where((role) => role != 'Admin').toList() 
+        : _roles;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.3),
@@ -364,7 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
-        children: _roles.map((role) {
+        children: availableRoles.map((role) {
           final isSelected = _selectedRole == role;
           return Expanded(
             child: GestureDetector(
