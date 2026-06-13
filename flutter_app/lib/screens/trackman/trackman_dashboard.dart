@@ -10,6 +10,7 @@ import 'trackman_history_screen.dart';
 import 'trackman_safety_screen.dart';
 import 'trackman_geofencing_screen.dart';
 import 'trackman_report_issue_screen.dart';
+import 'trackman_tasks_screen.dart';
 
 class TrackmanDashboardScreen extends StatefulWidget {
   const TrackmanDashboardScreen({super.key});
@@ -307,6 +308,21 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
             ),
           ),
           _drawerItem(context, Icons.dashboard_outlined, 'Dashboard', () => Navigator.pop(context)),
+          _drawerItem(
+                      context,
+                      Icons.assignment_outlined,
+                  'My Tasks',
+                     () {
+                      Navigator.pop(context);
+
+                    Navigator.push(
+                      context,
+                        MaterialPageRoute(
+                             builder: (_) => const TrackmanTasksScreen(),
+                                 ),
+                                );
+                               },
+                              ),
           _drawerItem(context, Icons.history, 'My Ride History', () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanHistoryScreen()));
