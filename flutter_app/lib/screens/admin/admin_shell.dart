@@ -6,6 +6,7 @@ import 'tabs/admin_users_tab.dart';
 import 'tabs/admin_fleet_tab.dart';
 import 'tabs/admin_reports_tab.dart';
 import 'tabs/admin_broadcast_tab.dart';
+import '../alerts/alerts_rules_screen.dart';
 import 'widgets/admin_sidebar.dart';
 
 class AdminShell extends StatefulWidget {
@@ -23,6 +24,7 @@ class _AdminShellState extends State<AdminShell> {
     AdminNavItem(icon: Icons.how_to_reg_rounded,       label: 'Approvals', hasBadge: true),
     AdminNavItem(icon: Icons.people_alt_rounded,       label: 'Users'),
     AdminNavItem(icon: Icons.electric_scooter_rounded, label: 'Fleet'),
+    AdminNavItem(icon: Icons.rule_outlined,            label: 'Rules & Alerts'),
     AdminNavItem(icon: Icons.report_problem_rounded,   label: 'Reports'),
     AdminNavItem(icon: Icons.campaign_rounded,         label: 'Broadcast'),
   ];
@@ -37,6 +39,7 @@ class _AdminShellState extends State<AdminShell> {
       AdminApprovalsTab(onBadgeCountChanged: (_) => setState(() {})),
       const AdminUsersTab(),
       const AdminFleetTab(),
+      const AlertsRulesScreen(),
       const AdminReportsTab(),
       const AdminBroadcastTab(),
     ];
@@ -71,23 +74,24 @@ class _AdminShellState extends State<AdminShell> {
   Widget _buildNarrowLayout() {
     return Column(
       children: [
-        // Top AppBar for narrow layout
-        Container(
-          height: MediaQuery.of(context).padding.top + 56,
-          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-          color: AppColors.primary,
-          child: Row(
-            children: [
-              const SizedBox(width: 16),
-              Image.asset('assets/images/logo.png', height: 32),
-              const SizedBox(width: 12),
-              const Text(
-                'Admin Panel',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-            ],
+        // Top AppBar for narrow layout (only on Overview)
+        if (_selectedIndex == 0)
+          Container(
+            height: MediaQuery.of(context).padding.top + 56,
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            color: AppColors.primary,
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                Image.asset('assets/images/logo.png', height: 32),
+                const SizedBox(width: 12),
+                const Text(
+                  'Admin Panel',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
           ),
-        ),
         Expanded(child: _tabs[_selectedIndex]),
         _buildBottomNav(),
       ],

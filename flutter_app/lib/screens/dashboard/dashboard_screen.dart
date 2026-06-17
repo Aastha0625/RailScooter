@@ -8,6 +8,9 @@ import '../users/user_assignment_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
 import '../tracking/geofence_tracking_screen.dart';
 import '../../services/api_service.dart';
+import '../../models/alert_rule.dart';
+import '../../models/vehicle_alert.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +21,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, int> _stats = {};
+  List<AlertRule> _rules = [];
+  List<VehicleAlert> _alerts = [];
   bool _loading = true;
 
   @override
@@ -28,8 +33,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadStats() async {
     try {
-      final stats = await ApiService.fetchDashboardStats();
-      if (mounted) setState(() { _stats = stats; _loading = false; });
+      final results = await Future.wait([
+        ApiService.fetchDashboardStats(),
+        ApiService.fetchAlertRules(),
+        ApiService.fetchAlertEvents(unacknowledged: true),
+      ]);
+      if (mounted) {
+        setState(() { 
+          _stats = results[0] as Map<String, int>; 
+          _rules = (results[1] as List<AlertRule>).take(2).toList();
+          _alerts = (results[2] as List<VehicleAlert>).take(3).toList();
+          _loading = false; 
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
@@ -88,6 +104,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 24),
                     _buildAnalyticsTitle('Critical Metrics'),
                     _buildMetricsGrid(),
+                    const SizedBox(height: 24),
+                    _buildAnalyticsTitle('Live Alerts Preview'),
+                    _buildAlertsPreview(),
+                    const SizedBox(height: 24),
+                    _buildAnalyticsTitle('Active Rules Preview'),
+                    _buildRulesPreview(),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -325,6 +347,111 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildAlertsPreview() {
+    if (_alerts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Text('No unacknowledged alerts.', style: AppTextStyles.bodySmall),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: _alerts.map((a) => _buildAlertCard(a)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildRulesPreview() {
+    if (_rules.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Text('No active rules configured.', style: AppTextStyles.bodySmall),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: _rules.map((r) => _buildRuleCard(r)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildAlertCard(VehicleAlert alert) {
+    Color sevColor = _severityColor(alert.severity);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: sevColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: sevColor, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${alert.vehicleLabel} - ${alert.alertType}', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
+                Text(alert.message, style: AppTextStyles.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          Text(DateFormat('HH:mm').format(alert.createdAt.toLocal()), style: AppTextStyles.caption),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRuleCard(AlertRule rule) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: const Icon(Icons.rule_outlined, color: AppColors.primary, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(rule.name, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
+                Text('${rule.ruleType} ${rule.conditionOperator} ${rule.conditionValue}', style: AppTextStyles.caption),
+              ],
+            ),
+          ),
+          Switch(
+            value: rule.isActive,
+            onChanged: null, // read-only preview
+            activeThumbColor: AppColors.accent,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _severityColor(String severity) {
+    switch (severity) {
+      case 'critical': return AppColors.severityCritical;
+      case 'high': return AppColors.severityHigh;
+      case 'medium': return AppColors.severityMedium;
+      default: return AppColors.severityLow;
+    }
+  }
+
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
       child: Column(
@@ -346,7 +473,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PiSolve', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                     Text('Fleet Management', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ],
                 ),

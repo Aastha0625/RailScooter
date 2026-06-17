@@ -6,7 +6,8 @@ import 'vehicle_registration_screen.dart';
 import 'vehicle_details_sheet.dart';
 
 class VehicleRegistryScreen extends StatefulWidget {
-  const VehicleRegistryScreen({super.key});
+  final String? initialStatusFilter;
+  const VehicleRegistryScreen({super.key, this.initialStatusFilter});
 
   @override
   State<VehicleRegistryScreen> createState() => _VehicleRegistryScreenState();
@@ -23,6 +24,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
   @override
   void initState() {
     super.initState();
+    _statusFilter = widget.initialStatusFilter ?? '';
     _load();
     _searchCtrl.addListener(_applyFilters);
   }
@@ -79,10 +81,17 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vehicle Registry'),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: _pisolveTag(),
+            padding: const EdgeInsets.only(right: 32),
+            child: Center(
+              child: Transform.scale(
+                scale: 6.0,
+                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
+              ),
+            ),
           ),
         ],
       ),

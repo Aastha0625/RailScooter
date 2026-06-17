@@ -188,7 +188,7 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -196,7 +196,7 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
             children: [
               const Text(
                 'Log a New Issue',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -211,7 +211,7 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
-                  height: 120,
+                  height: 100,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.white,

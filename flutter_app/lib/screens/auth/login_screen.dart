@@ -80,36 +80,10 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _passwordCtrl.text,
         );
         
-        // Validate role from backend (app_users table)
-        final user = authResponse.user;
-        if (user != null) {
-          final profile = await Supabase.instance.client
-              .from('app_users')
-              .select('role')
-              .eq('id', user.id)
-              .maybeSingle();
-
-          if (profile != null) {
-            final dbRole = (profile['role'] as String?)?.toLowerCase() ?? 'trackman';
-            final selectedRoleLower = _selectedRole.toLowerCase();
-
-            // Check if the assigned database role matches the selected toggle
-            if (dbRole != selectedRoleLower) {
-              await Supabase.instance.client.auth.signOut();
-              throw Exception('Access Denied: You do not have $_selectedRole privileges. (Registered as: ${dbRole.toUpperCase()})');
-            }
-            
-            // Login successful and role validated
-            if (mounted) {
-              setState(() => _loading = false);
-              // Pop the login screen to reveal the Dashboard which AuthGate builds automatically
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            }
-            
-          } else {
-            await Supabase.instance.client.auth.signOut();
-            throw Exception('Access Denied: No user profile found in the database.');
-          }
+        // Validation is now handled completely by _RoleRouter in main.dart
+        if (mounted) {
+          setState(() => _loading = false);
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
       
@@ -241,8 +215,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildRoleSelector(),
-                const SizedBox(height: 30),
+                if (_isSignUp) _buildRoleSelector(),
+                if (_isSignUp) const SizedBox(height: 30),
                 
                 if (_error != null) ...[
                   Container(
@@ -325,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                _isSignUp ? 'Sign Up' : 'Sign In as $_selectedRole', 
+                                _isSignUp ? 'Sign Up' : 'Sign In', 
                                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF431407))
                               ),
                               const SizedBox(width: 8),

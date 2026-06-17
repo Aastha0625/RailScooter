@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../theme/app_theme.dart';
 import '../../../services/api_service.dart';
+import '../../../models/alert_rule.dart';
+import '../../../models/vehicle_alert.dart';
 
 class AdminOverviewTab extends StatefulWidget {
   const AdminOverviewTab({super.key});
@@ -18,6 +20,8 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   int _totalVehicles = 0;
   int _broadcastCount = 0;
   List<Map<String, dynamic>> _activityLog = [];
+  List<AlertRule> _rules = [];
+  List<VehicleAlert> _alerts = [];
   RealtimeChannel? _channel;
 
   @override
@@ -41,6 +45,8 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
         ApiService.fetchActivityLog(limit: 20),
         ApiService.fetchBroadcasts(),
         ApiService.fetchDashboardStats(),
+        ApiService.fetchAlertRules(),
+        ApiService.fetchAlertEvents(unacknowledged: true),
       ]);
       if (!mounted) return;
       setState(() {
@@ -50,6 +56,8 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
         _broadcastCount = (results[3] as List).length;
         final stats = results[4] as Map<String, int>;
         _totalVehicles = stats['total_vehicles'] ?? 0;
+        _rules = (results[5] as List<AlertRule>).take(3).toList();
+        _alerts = (results[6] as List<VehicleAlert>).take(4).toList();
         _loading = false;
       });
     } catch (e) {
@@ -118,6 +126,18 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
           _buildStatCardsGrid(),
           const SizedBox(height: 28),
 
+          // Alerts Preview
+          _buildSectionHeader(Icons.warning_amber_rounded, 'Live Alerts Preview', AppColors.severityHigh),
+          const SizedBox(height: 12),
+          _buildAlertsPreview(),
+          const SizedBox(height: 28),
+
+          // Rules Preview
+          _buildSectionHeader(Icons.rule_outlined, 'Active Rules', AppColors.primary),
+          const SizedBox(height: 12),
+          _buildRulesPreview(),
+          const SizedBox(height: 28),
+
           // Activity Feed
           _buildSectionHeader(
               Icons.timeline_rounded, 'Live Activity Feed', AppColors.primary),
@@ -156,21 +176,13 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
         final width = constraints.maxWidth;
         final int crossAxisCount = width > 700 ? 4 : 2;
         
-        // Calculate child aspect ratio based on constraints to prevent overflow on small screens
-        double childAspectRatio = 1.6;
-        if (width <= 360) {
-          childAspectRatio = 1.15;
-        } else if (width <= 480) {
-          childAspectRatio = 1.35;
-        } else if (width <= 700) {
-          childAspectRatio = 1.5;
-        }
-
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 14,
-          crossAxisSpacing: 14,
-          childAspectRatio: childAspectRatio,
+        return GridView(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            mainAxisExtent: 110,
+          ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
@@ -370,6 +382,143 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
         },
       ),
     );
+  }
+
+  Widget _buildAlertsPreview() {
+    if (_alerts.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: const Center(
+          child: Column(
+            children: [
+              Icon(Icons.shield_outlined, size: 40, color: AppColors.textLight),
+              SizedBox(height: 12),
+              Text('No unacknowledged alerts', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: ListView.separated(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _alerts.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final alert = _alerts[index];
+          final sevColor = _severityColor(alert.severity);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: sevColor, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${alert.vehicleLabel} - ${alert.alertType}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
+                      Text(alert.message, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+                Text(DateFormat('MMM d, h:mm a').format(alert.createdAt.toLocal()), style: const TextStyle(fontSize: 10, color: AppColors.textLight)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRulesPreview() {
+    if (_rules.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: const Center(
+          child: Column(
+            children: [
+              Icon(Icons.rule_outlined, size: 40, color: AppColors.textLight),
+              SizedBox(height: 12),
+              Text('No active rules configured', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: ListView.separated(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _rules.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final rule = _rules[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.rule_outlined, color: AppColors.primary, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(rule.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
+                      Text('${rule.ruleType} ${rule.conditionOperator} ${rule.conditionValue}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: rule.isActive,
+                  onChanged: null,
+                  activeThumbColor: AppColors.accent,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _severityColor(String severity) {
+    switch (severity) {
+      case 'critical': return AppColors.severityCritical;
+      case 'high': return AppColors.severityHigh;
+      case 'medium': return AppColors.severityMedium;
+      default: return AppColors.severityLow;
+    }
   }
 
   Widget _buildActivityItem(Map<String, dynamic> entry) {

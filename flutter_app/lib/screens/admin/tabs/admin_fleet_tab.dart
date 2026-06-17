@@ -79,7 +79,7 @@ class _AdminFleetTabState extends State<AdminFleetTab> {
                             maxCrossAxisExtent: 340,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            childAspectRatio: 1.35,
+                            mainAxisExtent: 160,
                           ),
                           itemCount: _filtered.length,
                           itemBuilder: (_, i) {

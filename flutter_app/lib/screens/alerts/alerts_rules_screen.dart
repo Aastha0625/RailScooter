@@ -67,6 +67,19 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alerts & Rules'),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 32),
+            child: Center(
+              child: Transform.scale(
+                scale: 6.0,
+                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
+              ),
+            ),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: AppColors.accent,

@@ -51,7 +51,7 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) return const DashboardScreen();
+    if (session != null) return const _RoleRouter();
     return const WelcomeScreen();
   }
 }
@@ -129,12 +129,13 @@ class _RoleRouterState extends State<_RoleRouter> {
     }
 
     // Check approval status first
-    if (_approvalStatus == 'pending') {
-      return _buildPendingScreen();
-    }
-    if (_approvalStatus == 'rejected') {
-      return _buildRejectedScreen();
-    }
+    // (Bypassed for prototype so new users can log in immediately)
+    // if (_approvalStatus == 'pending') {
+    //   return _buildPendingScreen();
+    // }
+    // if (_approvalStatus == 'rejected') {
+    //   return _buildRejectedScreen();
+    // }
 
     // Approved — route by role
     if (_role == 'admin') {

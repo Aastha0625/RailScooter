@@ -6,6 +6,7 @@ import '../vehicles/vehicle_registry_screen.dart';
 import '../tracking/geofence_tracking_screen.dart';
 import 'manager_dispatch_screen.dart';
 import 'manager_issues_screen.dart';
+import 'manager_dispatch_history_screen.dart';
 import '../../services/api_service.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
@@ -104,6 +105,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                     const SizedBox(height: 24),
                     _buildAnalyticsTitle('Manager Metrics'),
                     _buildMetricsGrid(),
+                    const SizedBox(height: 24),
+                    _buildAnalyticsTitle('Recent Dispatches'),
+                    _buildDispatchHistoryButton(),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -122,23 +126,23 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           bottomRight: Radius.circular(24),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: AppColors.accent,
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(color: AppColors.accent.withValues(alpha: 0.35), blurRadius: 15, offset: const Offset(0, 4)),
+                    BoxShadow(color: AppColors.accent.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4)),
                   ],
                 ),
-                child: const Icon(Icons.assignment_ind, color: Colors.white, size: 30),
+                child: const Icon(Icons.assignment_ind, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
               const Column(
@@ -164,7 +168,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     ];
 
     return SizedBox(
-      height: 90,
+      height: 75,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
@@ -179,7 +183,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     return GestureDetector(
       onTap: module.onTap,
       child: Container(
-        width: 80,
+        width: 72,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -191,9 +195,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(module.icon, color: module.color, size: 28),
-            const SizedBox(height: 8),
-            Text(module.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+            Icon(module.icon, color: module.color, size: 24),
+            const SizedBox(height: 6),
+            Text(module.label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary)),
           ],
         ),
       ),
@@ -231,43 +235,62 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       child: Column(
         children: [
           SizedBox(
-            height: 200,
+            height: 160,
             child: PieChart(
               PieChartData(
+                pieTouchData: PieTouchData(
+                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                    if (!event.isInterestedForInteractions || pieTouchResponse == null || pieTouchResponse.touchedSection == null) {
+                      return;
+                    }
+                    if (event is FlTapUpEvent) {
+                      final title = pieTouchResponse.touchedSection!.touchedSection!.title;
+                      String? status;
+                      if (title == active.toString() && active > 0) status = 'active';
+                      else if (title == idle.toString() && idle > 0) status = 'idle';
+                      else if (title == maintenance.toString() && maintenance > 0) status = 'maintenance';
+                      else if (title == offline.toString() && offline > 0) status = 'offline';
+
+                      if (status != null) {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => VehicleRegistryScreen(initialStatusFilter: status)));
+                      }
+                    }
+                  },
+                ),
                 sectionsSpace: 2,
-                centerSpaceRadius: 50,
+                centerSpaceRadius: 40,
                 sections: [
                   if (active > 0)
                     PieChartSectionData(
                       color: AppColors.statusActive,
                       value: active.toDouble(),
                       title: '$active',
-                      radius: 30,
-                      titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      radius: 24,
+                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   if (idle > 0)
                     PieChartSectionData(
                       color: AppColors.statusIdle,
                       value: idle.toDouble(),
                       title: '$idle',
-                      radius: 25,
-                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      radius: 20,
+                      titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   if (maintenance > 0)
                     PieChartSectionData(
                       color: AppColors.statusMaintenance,
                       value: maintenance.toDouble(),
                       title: '$maintenance',
-                      radius: 25,
-                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      radius: 20,
+                      titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   if (offline > 0)
                     PieChartSectionData(
                       color: AppColors.statusOffline,
                       value: offline.toDouble(),
                       title: '$offline',
-                      radius: 25,
-                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      radius: 20,
+                      titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                 ],
               ),
@@ -303,20 +326,34 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Expanded(child: _buildMetricCard(Icons.report_problem, 'Open Issues', '$_openIssuesCount', AppColors.severityHigh)),
+          Expanded(child: _buildMetricCard(
+            icon: Icons.report_problem, 
+            label: 'Open Issues', 
+            value: '$_openIssuesCount', 
+            color: AppColors.severityHigh,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerIssuesScreen())),
+          )),
           const SizedBox(width: 16),
-          Expanded(child: _buildMetricCard(Icons.electric_scooter, 'Available for Dispatch', '${(_stats['total_vehicles'] ?? 10) - (_stats['active_vehicles'] ?? 6)}', Colors.green)),
+          Expanded(child: _buildMetricCard(
+            icon: Icons.electric_scooter, 
+            label: 'Available for Dispatch', 
+            value: '${(_stats['total_vehicles'] ?? 10) - (_stats['active_vehicles'] ?? 6)}', 
+            color: Colors.green,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen(initialStatusFilter: 'idle'))),
+          )),
         ],
       ),
     );
   }
 
-  Widget _buildMetricCard(IconData icon, String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
+  Widget _buildMetricCard({required IconData icon, required String label, required String value, required Color color, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.cardBorder),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
@@ -326,15 +363,64 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 24),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 16),
-          Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const SizedBox(height: 12),
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
         ],
+      ),
+    ),
+    );
+  }
+
+  Widget _buildDispatchHistoryButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerDispatchHistoryScreen())),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.history_outlined, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('View Dispatch History', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        SizedBox(height: 2),
+                        Text('See all active and completed runs', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textLight),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -360,7 +446,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PiSolve', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                     Text('Manager Operations', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ],
                 ),

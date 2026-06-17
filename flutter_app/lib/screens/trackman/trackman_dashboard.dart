@@ -41,10 +41,7 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
             is_active,
             vehicles (
               id,
-              vehicle_id,
-              battery_level,
-              current_speed,
-              estimated_range
+              vehicle_id
             )
           ''')
           .eq('assigned_user_id', user.id)
@@ -130,30 +127,30 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
           bottomRight: Radius.circular(24),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: _isUnlocked ? Colors.green : AppColors.statusIdle,
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(color: (_isUnlocked ? Colors.green : AppColors.statusIdle).withValues(alpha: 0.35), blurRadius: 15, offset: const Offset(0, 4)),
+                    BoxShadow(color: (_isUnlocked ? Colors.green : AppColors.statusIdle).withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4)),
                   ],
                 ),
-                child: Icon(_isUnlocked ? Icons.lock_open : Icons.lock, color: Colors.white, size: 30),
+                child: Icon(_isUnlocked ? Icons.lock_open : Icons.lock, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(vehicleLabel, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-                  Text(hasAssignment ? (_isUnlocked ? 'Active Run' : 'Locked') : 'Awaiting Assignment', style: TextStyle(color: hasAssignment ? (_isUnlocked ? Colors.greenAccent : Colors.white70) : Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w500)),
+                  Text(vehicleLabel, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                  Text(hasAssignment ? (_isUnlocked ? 'Active Run' : 'Locked') : 'Awaiting Assignment', style: TextStyle(color: hasAssignment ? (_isUnlocked ? Colors.greenAccent : Colors.white70) : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w500)),
                 ],
               ),
               const Spacer(),
@@ -174,9 +171,9 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildTelemetryItem(Icons.speed, _isUnlocked ? '${vehicle?['current_speed'] ?? 0} km/h' : '0 km/h', 'Speed'),
-              _buildTelemetryItem(Icons.battery_charging_full, '${vehicle?['battery_level'] ?? 0}%', 'Battery'),
-              _buildTelemetryItem(Icons.timeline, '${vehicle?['estimated_range'] ?? 0} km', 'Est. Range'),
+              _buildTelemetryItem(Icons.speed, _isUnlocked ? '${vehicle?['current_speed'] ?? 25} km/h' : '0 km/h', 'Speed'),
+              _buildTelemetryItem(Icons.battery_charging_full, '${vehicle?['battery_level'] ?? 100}%', 'Battery'),
+              _buildTelemetryItem(Icons.timeline, '${vehicle?['estimated_range'] ?? 45} km', 'Est. Range'),
             ],
           ),
         ],
@@ -187,10 +184,10 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
   Widget _buildTelemetryItem(IconData icon, String value, String label) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white70, size: 28),
+        Icon(icon, color: Colors.white70, size: 24),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
       ],
     );
   }
@@ -199,7 +196,7 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -210,15 +207,15 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
         ),
         child: const Row(
           children: [
-            Icon(Icons.location_on, color: AppColors.accent, size: 40),
-            SizedBox(width: 16),
+            Icon(Icons.location_on, color: AppColors.accent, size: 32),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Current Zone', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                  Text('Current Zone', style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                   SizedBox(height: 4),
-                  Text('Main Station Zone', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  Text('Main Station Zone', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 ],
               ),
             ),
@@ -243,26 +240,26 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Issue Reporting Modal Opened')));
                   },
-                  icon: const Icon(Icons.report_problem, color: Colors.white),
-                  label: const Text('Report Issue', style: TextStyle(color: Colors.white)),
+                  icon: const Icon(Icons.report_problem, color: Colors.white, size: 20),
+                  label: const Text('Report Issue', style: TextStyle(color: Colors.white, fontSize: 13)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Emergency Stop Triggered!'), backgroundColor: Colors.red));
                   },
-                  icon: const Icon(Icons.warning, color: Colors.white),
-                  label: const Text('SOS / Stop', style: TextStyle(color: Colors.white)),
+                  icon: const Icon(Icons.warning, color: Colors.white, size: 20),
+                  label: const Text('SOS / Stop', style: TextStyle(color: Colors.white, fontSize: 13)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -296,7 +293,7 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PiSolve', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                     Text('Fleet Management', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ],
                 ),
