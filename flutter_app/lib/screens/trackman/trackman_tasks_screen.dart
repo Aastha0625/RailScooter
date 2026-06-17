@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import 'trackman_task_details_screen.dart';
 
 class TrackmanTasksScreen extends StatelessWidget {
   const TrackmanTasksScreen({super.key});
@@ -38,7 +39,6 @@ class TrackmanTasksScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         elevation: 0,
@@ -49,7 +49,6 @@ class TrackmanTasksScreen extends StatelessWidget {
           ),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView.builder(
@@ -57,94 +56,111 @@ class TrackmanTasksScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             final task = tasks[index];
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: AppColors.cardBorder,
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        TrackmanTaskDetailsScreen(task: task),
+                  ),
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: AppColors.cardBorder,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    backgroundColor:
-                        (task["color"] as Color).withValues(alpha: 0.15),
-                    radius: 26,
-                    child: Icon(
-                      task["icon"] as IconData,
-                      color: task["color"] as Color,
-                      size: 26,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor:
+                          (task["color"] as Color)
+                              .withValues(alpha: 0.15),
+                      radius: 26,
+                      child: Icon(
+                        task["icon"] as IconData,
+                        color: task["color"] as Color,
+                        size: 26,
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(width: 16),
+                    const SizedBox(width: 16),
 
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task["title"] as String,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          task["location"] as String,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          task["time"] as String,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        Row(
-                          children: [
-                            _buildChip(
-                              task["priority"] as String,
-                              task["color"] as Color,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            task["title"] as String,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
                             ),
+                          ),
 
-                            const SizedBox(width: 8),
+                          const SizedBox(height: 6),
 
-                            _buildStatusChip(
-                              task["status"] as String,
+                          Text(
+                            task["location"] as String,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+
+                          const SizedBox(height: 6),
+
+                          Text(
+                            task["time"] as String,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          Row(
+                            children: [
+                              _buildChip(
+                                task["priority"] as String,
+                                task["color"] as Color,
+                              ),
+
+                              const SizedBox(width: 8),
+
+                              _buildStatusChip(
+                                task["status"] as String,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
               ),
             );
           },
