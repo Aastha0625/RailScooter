@@ -421,8 +421,6 @@ class _RuleCard extends StatelessWidget {
             _Tag(label: '${rule.conditionOperator} ${rule.conditionValue} ${rule.conditionUnit}', color: AppColors.textSecondary),
             const Spacer(),
             IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: onEdit, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
-            const SizedBox(width: 8),
-            IconButton(icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.severityCritical), onPressed: onDelete, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
           ],
         ),
         if (rule.notificationEmail || rule.notificationPush || rule.notificationSms) ...[
