@@ -14,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
@@ -39,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _fullNameCtrl.dispose();
+    _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -61,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
           data: {
             'full_name': _fullNameCtrl.text.trim(),
             'role': _selectedRole.toLowerCase(),
+            'phone': _phoneCtrl.text.trim(),
           },
         );
         
@@ -266,6 +269,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     icon: Icons.person_outline,
                   ),
                   const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _phoneCtrl,
+                    label: 'Phone Number',
+                    icon: Icons.phone_outlined,
+                    isPhone: true,
+                  ),
+                  const SizedBox(height: 16),
                 ],
                 _buildTextField(
                   controller: _emailCtrl,
@@ -401,10 +411,15 @@ class _LoginScreenState extends State<LoginScreen> {
     required IconData icon,
     bool isEmail = false,
     bool isPassword = false,
+    bool isPhone = false,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+      keyboardType: isEmail
+          ? TextInputType.emailAddress
+          : isPhone
+              ? TextInputType.phone
+              : TextInputType.text,
       obscureText: isPassword ? _obscurePassword : false,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
@@ -443,6 +458,9 @@ class _LoginScreenState extends State<LoginScreen> {
       validator: (v) {
         if (v == null || v.isEmpty) return '$label is required';
         if (isEmail && !v.contains('@')) return 'Enter a valid email';
+        if (isPhone && (v.length < 10 || !RegExp(r'^[0-9+\-\s()]+$').hasMatch(v))) {
+          return 'Enter a valid phone number (at least 10 digits)';
+        }
         if (isPassword && _isSignUp && v.length < 6) return 'Password must be at least 6 characters';
         return null;
       },
