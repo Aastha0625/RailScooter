@@ -14,28 +14,18 @@ router.get('/live', async (req, res) => {
       if (cached) return res.json(JSON.parse(cached));
     } catch (_) {}
 
-    // Get most recent tracking per vehicle using a subquery
+    // Get most recent tracking per vehicle using the latest_vehicle_tracking view
     const { data, error } = await supabase
-      .from('vehicle_tracking')
+      .from('latest_vehicle_tracking')
       .select(`
         *,
         vehicles(id, vehicle_id, variant, status, gps_enabled)
-      `)
-      .order('recorded_at', { ascending: false })
-      .limit(200);
+      `);
 
     if (error) throw error;
 
-    // Deduplicate: keep only latest per vehicle
-    const latestMap = {};
-    for (const row of data) {
-      const vid = row.vehicle_id;
-      if (!latestMap[vid]) latestMap[vid] = row;
-    }
-    const result = Object.values(latestMap);
-
-    try { await redis.setex(cacheKey, CACHE_TTL.TRACKING, JSON.stringify(result)); } catch (_) {}
-    res.json(result);
+    try { await redis.setex(cacheKey, CACHE_TTL.TRACKING, JSON.stringify(data)); } catch (_) {}
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -56,6 +46,66 @@ router.post('/', async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Evaluate active alert rules and generate events
+    try {
+      const { data: rules } = await supabase
+        .from('alert_rules')
+        .select('*')
+        .eq('is_active', true);
+
+      if (rules && rules.length > 0) {
+        for (const rule of rules) {
+          let triggered = false;
+          let val = null;
+          const condVal = parseFloat(rule.condition_value);
+
+          if (rule.rule_type === 'speed' && speed_kmh !== undefined) {
+            val = speed_kmh;
+            if (rule.condition_operator === 'gt' && speed_kmh > condVal) triggered = true;
+            if (rule.condition_operator === 'lt' && speed_kmh < condVal) triggered = true;
+          } else if (rule.rule_type === 'battery' && battery_percent !== undefined) {
+            val = battery_percent;
+            if (rule.condition_operator === 'lt' && battery_percent < condVal) triggered = true;
+            if (rule.condition_operator === 'gt' && battery_percent > condVal) triggered = true;
+          }
+
+          if (triggered) {
+            // Check if there is already an unacknowledged alert for this rule & vehicle to avoid spam
+            const { data: existingAlert } = await supabase
+              .from('vehicle_alerts')
+              .select('id')
+              .eq('vehicle_id', vehicle_id)
+              .eq('alert_rule_id', rule.id)
+              .eq('is_acknowledged', false)
+              .limit(1)
+              .maybeSingle();
+
+            if (!existingAlert) {
+              await supabase
+                .from('vehicle_alerts')
+                .insert({
+                  vehicle_id,
+                  alert_rule_id: rule.id,
+                  alert_type: rule.rule_type,
+                  severity: rule.severity || 'medium',
+                  message: `${rule.name}: Vehicle triggered alert (Value: ${val}, Threshold: ${rule.condition_operator} ${condVal})`,
+                  latitude,
+                  longitude,
+                  is_acknowledged: false
+                });
+            }
+          }
+        }
+      }
+    } catch (evalErr) {
+      console.error('[Alerts Evaluation] Error:', evalErr.message);
+    }
+
+    // Broadcast the new tracking update to all active WebSocket connections
+    if (global.broadcastTracking) {
+      global.broadcastTracking(data);
+    }
 
     // Cache the latest position in Redis (fast lookup)
     try {
