@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -21,6 +22,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
   List<VehicleLocation> _liveLocations = [];
   bool _loading = true;
   final _mapController = MapController();
+  Timer? _pollingTimer;
 
   static const _defaultCenter = LatLng(28.6139, 77.2090); // New Delhi
 
@@ -28,13 +30,42 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(_handleTabChange);
     _load();
+    _startPolling();
   }
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
+    _tabs.removeListener(_handleTabChange);
     _tabs.dispose();
     super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _pollSilent();
+    });
+  }
+
+  Future<void> _pollSilent() async {
+    try {
+      final locations = await ApiService.fetchLiveTracking();
+      if (mounted) {
+        setState(() {
+          _liveLocations = locations;
+        });
+      }
+    } catch (e) {
+      debugPrint('Silent poll error: $e');
+    }
   }
 
   Future<void> _load() async {

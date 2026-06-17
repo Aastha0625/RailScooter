@@ -13,10 +13,12 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
   late bool _isSignUp;
+  bool _obscurePassword = true;
   String? _error;
   String? _message;
   
@@ -36,6 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _fullNameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -56,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
           data: {
-            'full_name': _emailCtrl.text.trim().split('@')[0],
+            'full_name': _fullNameCtrl.text.trim(),
             'role': _selectedRole.toLowerCase(),
           },
         );
@@ -75,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         // Sign In Flow
-        final authResponse = await Supabase.instance.client.auth.signInWithPassword(
+        await Supabase.instance.client.auth.signInWithPassword(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
         );
@@ -256,6 +259,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                 ],
                 
+                if (_isSignUp) ...[
+                  _buildTextField(
+                    controller: _fullNameCtrl,
+                    label: 'Full Name',
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _buildTextField(
                   controller: _emailCtrl,
                   label: 'Email Address',
@@ -394,12 +405,26 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
-      obscureText: isPassword,
+      obscureText: isPassword ? _obscurePassword : false,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54),
         prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: Colors.white54,
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              )
+            : null,
         filled: true,
         fillColor: Colors.black.withValues(alpha: 0.25),
         border: OutlineInputBorder(
