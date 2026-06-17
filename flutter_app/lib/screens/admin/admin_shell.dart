@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import 'tabs/admin_overview_tab.dart';
 import 'tabs/admin_approvals_tab.dart';
@@ -89,6 +90,38 @@ class _AdminShellState extends State<AdminShell> {
                   'Admin Panel',
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
                 ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.logout_rounded, color: Colors.white70),
+                  tooltip: 'Log Out',
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w700)),
+                        content: const Text('Are you sure you want to log out of the Admin Panel?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.severityCritical,
+                            ),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Log Out'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await Supabase.instance.client.auth.signOut();
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
               ],
             ),
           ),
