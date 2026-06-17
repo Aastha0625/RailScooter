@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../models/geofence.dart';
 import '../../models/vehicle_location.dart';
 import '../../services/api_service.dart';
+import '../../services/railway_routing_service.dart';
 
 class GeofenceTrackingScreen extends StatefulWidget {
   const GeofenceTrackingScreen({super.key});
@@ -43,10 +44,32 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
         ApiService.fetchGeofences(),
         ApiService.fetchLiveTracking(),
       ]);
+      final rawLocations = results[1] as List<VehicleLocation>;
+      
+      final routingService = RailwayRoutingService();
+      final snappedLocations = <VehicleLocation>[];
+      for (final loc in rawLocations) {
+        final snapped = await routingService.snapToTrack(LatLng(loc.latitude, loc.longitude));
+        if (snapped != null) {
+          snappedLocations.add(VehicleLocation(
+            vehicleId: loc.vehicleId,
+            vehicleLabel: loc.vehicleLabel,
+            latitude: snapped.latitude,
+            longitude: snapped.longitude,
+            speedKmh: loc.speedKmh,
+            batteryPercent: loc.batteryPercent,
+            isOnline: loc.isOnline,
+            recordedAt: loc.recordedAt,
+          ));
+        } else {
+          snappedLocations.add(loc);
+        }
+      }
+
       if (mounted) {
         setState(() {
           _geofences = results[0] as List<Geofence>;
-          _liveLocations = results[1] as List<VehicleLocation>;
+          _liveLocations = snappedLocations;
           _loading = false;
         });
       }
