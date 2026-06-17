@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
-import '../vehicles/vehicle_registry_screen.dart';
-import '../departments/department_assignment_screen.dart';
-import '../users/user_assignment_screen.dart';
-import '../alerts/alerts_rules_screen.dart';
-import '../tracking/geofence_tracking_screen.dart';
 import 'trackman_history_screen.dart';
 import 'trackman_safety_screen.dart';
 import 'trackman_geofencing_screen.dart';
@@ -53,9 +48,38 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
           .eq('is_active', true)
           .maybeSingle();
 
+      Map<String, dynamic>? assignmentData;
+      if (data != null) {
+        assignmentData = Map<String, dynamic>.from(data);
+        final vehicleMap = assignmentData['vehicles'];
+        if (vehicleMap != null && vehicleMap['id'] != null) {
+          final trackingData = await Supabase.instance.client
+              .from('vehicle_tracking')
+              .select('speed_kmh, battery_percent')
+              .eq('vehicle_id', vehicleMap['id'])
+              .order('recorded_at', ascending: false)
+              .limit(1)
+              .maybeSingle();
+
+          final updatedVehicleMap = Map<String, dynamic>.from(vehicleMap);
+          if (trackingData != null) {
+            updatedVehicleMap['current_speed'] = trackingData['speed_kmh'];
+            updatedVehicleMap['battery_level'] = trackingData['battery_percent'];
+            final double battery = (trackingData['battery_percent'] ?? 100).toDouble();
+            updatedVehicleMap['estimated_range'] = (battery * 0.45).toStringAsFixed(1);
+          } else {
+            // Fallback values if no telemetry exists yet
+            updatedVehicleMap['current_speed'] = 0;
+            updatedVehicleMap['battery_level'] = 100;
+            updatedVehicleMap['estimated_range'] = '45.0';
+          }
+          assignmentData['vehicles'] = updatedVehicleMap;
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _activeAssignment = data;
+          _activeAssignment = assignmentData;
           _loading = false;
         });
       }

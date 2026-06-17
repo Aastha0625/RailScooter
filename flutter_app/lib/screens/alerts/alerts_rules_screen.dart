@@ -23,13 +23,21 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(_handleTabChange);
     _load();
   }
 
   @override
   void dispose() {
+    _tabs.removeListener(_handleTabChange);
     _tabs.dispose();
     super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _load() async {
@@ -109,11 +117,13 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _tabs.index == 0 ? _showAddRule() : null,
-        backgroundColor: AppColors.accent,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: _tabs.index == 0
+          ? FloatingActionButton(
+              onPressed: _showAddRule,
+              backgroundColor: AppColors.accent,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : TabBarView(
