@@ -240,6 +240,21 @@ class ApiService {
     return data?['role'] as String?;
   }
 
+  /// Fetch count of all users (admin)
+  static Future<int> fetchUsersCount() async {
+    return await _sb
+        .from('app_users')
+        .count(CountOption.exact);
+  }
+
+  /// Fetch count of users by approval status
+  static Future<int> fetchPendingUsersCount() async {
+    return await _sb
+        .from('app_users')
+        .count(CountOption.exact)
+        .eq('approval_status', 'pending');
+  }
+
   // -------- ASSIGNMENTS --------
 
   static Future<List<Map<String, dynamic>>> fetchAssignments() async {
@@ -404,6 +419,13 @@ class ApiService {
         .order('created_at', ascending: false)
         .limit(50);
     return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+  }
+
+  /// Fetch total count of broadcasts
+  static Future<int> fetchBroadcastsCount() async {
+    return await _sb
+        .from('broadcast_messages')
+        .count(CountOption.exact);
   }
 
   static Future<void> sendBroadcast({

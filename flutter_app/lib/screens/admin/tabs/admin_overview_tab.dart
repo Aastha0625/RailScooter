@@ -40,20 +40,20 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   Future<void> _loadData() async {
     try {
       final results = await Future.wait([
-        ApiService.fetchUsersByApprovalStatus('pending'),
-        ApiService.fetchAllUsersAdmin(),
+        ApiService.fetchPendingUsersCount(),
+        ApiService.fetchUsersCount(),
         ApiService.fetchActivityLog(limit: 20),
-        ApiService.fetchBroadcasts(),
+        ApiService.fetchBroadcastsCount(),
         ApiService.fetchDashboardStats(),
         ApiService.fetchAlertRules(),
         ApiService.fetchAlertEvents(unacknowledged: true),
       ]);
       if (!mounted) return;
       setState(() {
-        _pendingCount = (results[0] as List).length;
-        _totalUsers = (results[1] as List).length;
+        _pendingCount = results[0] as int;
+        _totalUsers = results[1] as int;
         _activityLog = results[2] as List<Map<String, dynamic>>;
-        _broadcastCount = (results[3] as List).length;
+        _broadcastCount = results[3] as int;
         final stats = results[4] as Map<String, int>;
         _totalVehicles = stats['total_vehicles'] ?? 0;
         _rules = (results[5] as List<AlertRule>).take(3).toList();
