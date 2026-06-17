@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../models/vehicle.dart';
 import '../../../services/api_service.dart';
+import '../admin_vehicle_detail_screen.dart';
 
 class AdminFleetTab extends StatefulWidget {
   const AdminFleetTab({super.key});
@@ -91,7 +92,12 @@ class _AdminFleetTabState extends State<AdminFleetTab> {
                             return _VehicleCard(
                               vehicle: v,
                               assignedUser: assignedUser,
-                              onTap: () => _editVehicle(v),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AdminVehicleDetailScreen(vehicle: v),
+                                ),
+                              ).then((_) => _load()),
                             );
                           },
                         ),
@@ -121,6 +127,11 @@ class _AdminFleetTabState extends State<AdminFleetTab> {
                 Text('Rail Scooter Registry', style: TextStyle(color: Colors.white60, fontSize: 12)),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 24),
+            tooltip: 'Add Vehicle',
+            onPressed: _showAddVehicle,
           ),
           IconButton(icon: const Icon(Icons.refresh_rounded, color: Colors.white70), onPressed: _load),
         ],
@@ -220,7 +231,160 @@ class _AdminFleetTabState extends State<AdminFleetTab> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _VehicleEditSheet(vehicle: v, onUpdated: _load),
+      builder: (_) => VehicleEditSheet(vehicle: v, onUpdated: _load),
+    );
+  }
+
+  void _showAddVehicle() {
+    final idCtrl = TextEditingController();
+    final capacityCtrl = TextEditingController(text: '48V 25Ah');
+    final firmwareCtrl = TextEditingController(text: 'v1.0.0');
+    final notesCtrl = TextEditingController();
+    String selectedVariant = 'PiScoot';
+    String selectedBatteryType = 'LiFe';
+    bool gpsEnabled = true;
+    bool trackmanEnabled = true;
+    bool safetyEnabled = false;
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: StatefulBuilder(
+          builder: (ctx, setModal) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 24),
+                        SizedBox(width: 8),
+                        Text('Add New Vehicle', style: AppTextStyles.heading2),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _buildInputField('Vehicle ID * (e.g., PS006)', idCtrl, validator: (v) => v!.isEmpty ? 'Required' : null),
+                    const SizedBox(height: 12),
+                    _buildDropdownField('Variant', selectedVariant, const ['PiScoot', 'PiScoot-Bolt', 'PiScoot-Aegis'], (v) => setModal(() => selectedVariant = v!)),
+                    const SizedBox(height: 12),
+                    _buildDropdownField('Battery Type', selectedBatteryType, const ['LiFe', 'LiPo', 'NMC', 'LFP'], (v) => setModal(() => selectedBatteryType = v!)),
+                    const SizedBox(height: 12),
+                    _buildInputField('Battery Capacity', capacityCtrl),
+                    const SizedBox(height: 12),
+                    _buildInputField('Firmware Version', firmwareCtrl),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Expanded(child: Text('GPS Enabled', style: AppTextStyles.body)),
+                        Switch(value: gpsEnabled, onChanged: (v) => setModal(() => gpsEnabled = v), activeColor: AppColors.accent),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const Expanded(child: Text('Trackman Enabled', style: AppTextStyles.body)),
+                        Switch(value: trackmanEnabled, onChanged: (v) => setModal(() => trackmanEnabled = v), activeColor: AppColors.accent),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const Expanded(child: Text('Safety Features Enabled', style: AppTextStyles.body)),
+                        Switch(value: safetyEnabled, onChanged: (v) => setModal(() => safetyEnabled = v), activeColor: AppColors.accent),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInputField('Notes', notesCtrl, maxLines: 2),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (!formKey.currentState!.validate()) return;
+                          try {
+                            await ApiService.createVehicle({
+                              'vehicle_id': idCtrl.text.trim().toUpperCase(),
+                              'variant': selectedVariant,
+                              'battery_type': selectedBatteryType,
+                              'battery_capacity': capacityCtrl.text.trim(),
+                              'firmware_version': firmwareCtrl.text.trim(),
+                              'gps_enabled': gpsEnabled,
+                              'trackman_enabled': trackmanEnabled,
+                              'trackman_safety_enabled': safetyEnabled,
+                              'notes': notesCtrl.text.trim(),
+                            });
+                            await ApiService.logActivity(
+                              eventType: 'vehicle_updated',
+                              description: 'Vehicle ${idCtrl.text.trim().toUpperCase()} was registered',
+                            );
+                            if (mounted) { Navigator.pop(context); _load(); }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                            }
+                          }
+                        },
+                        child: const Text('Add Vehicle'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField(String label, TextEditingController ctrl, {int maxLines = 1, String? Function(String?)? validator}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: ctrl,
+          maxLines: maxLines,
+          validator: validator,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -339,17 +503,17 @@ class _StatusBadge extends StatelessWidget {
 }
 
 /// ─── Vehicle Edit Sheet ─────────────────────────────────────────────────────
-class _VehicleEditSheet extends StatefulWidget {
+class VehicleEditSheet extends StatefulWidget {
   final Vehicle vehicle;
   final VoidCallback onUpdated;
 
-  const _VehicleEditSheet({required this.vehicle, required this.onUpdated});
+  const VehicleEditSheet({required this.vehicle, required this.onUpdated});
 
   @override
-  State<_VehicleEditSheet> createState() => _VehicleEditSheetState();
+  State<VehicleEditSheet> createState() => _VehicleEditSheetState();
 }
 
-class _VehicleEditSheetState extends State<_VehicleEditSheet> {
+class _VehicleEditSheetState extends State<VehicleEditSheet> {
   late String _status;
   late TextEditingController _notesCtrl;
   bool _saving = false;
