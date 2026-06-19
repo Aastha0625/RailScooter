@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../models/vehicle_alert.dart';
-import '../../../services/api_service.dart';
+import '../../theme/app_theme.dart';
+import '../../models/vehicle_alert.dart';
+import '../../services/api_service.dart';
+import 'admin_base_screen.dart';
 
-class AdminReportsTab extends StatefulWidget {
-  const AdminReportsTab({super.key});
+class AdminReportsScreen extends StatefulWidget {
+  const AdminReportsScreen({super.key});
 
   @override
-  State<AdminReportsTab> createState() => _AdminReportsTabState();
+  State<AdminReportsScreen> createState() => _AdminReportsScreenState();
 }
 
-class _AdminReportsTabState extends State<AdminReportsTab> {
+class _AdminReportsScreenState extends State<AdminReportsScreen> {
   List<VehicleAlert> _alerts = [];
   bool _loading = true;
   bool _showOnlyUnack = false;
@@ -50,8 +51,8 @@ class _AdminReportsTabState extends State<AdminReportsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return AdminBaseScreen(
+      title: 'Incident Reports',
       body: Column(
         children: [
           _buildTopBar(),

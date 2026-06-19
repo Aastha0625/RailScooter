@@ -2,15 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../../models/geofence.dart';
 import '../../models/vehicle_location.dart';
 import '../../services/api_service.dart';
 import '../../services/railway_routing_service.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
+import '../manager/manager_base_screen.dart';
+import '../trackman/trackman_base_screen.dart';
 
 class GeofenceTrackingScreen extends StatefulWidget {
-  const GeofenceTrackingScreen({super.key});
+  final String userRole;
+  const GeofenceTrackingScreen({super.key, this.userRole = 'admin'});
 
   @override
   State<GeofenceTrackingScreen> createState() => _GeofenceTrackingScreenState();
@@ -121,36 +126,43 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'GeoFence & Tracking',
-        bottom: TabBar(
-          controller: _tabs,
-          indicatorColor: AppColors.accent,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          labelPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          tabs: const [
-            Tab(text: 'Live Map'),
-            Tab(text: 'Geofences'),
-          ],
-        ),
+    final appBar = CustomAppBar(
+      title: 'GeoFence & Tracking',
+      bottom: TabBar(
+        controller: _tabs,
+        indicatorColor: AppColors.accent,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.white60,
+        labelPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        tabs: const [
+          Tab(text: 'Live Map'),
+          Tab(text: 'Geofences'),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _tabs.index == 1 ? _showAddGeofence() : _load(),
-        backgroundColor: AppColors.accent,
-        child: Icon(_tabs.index == 1 ? Icons.add : Icons.refresh, color: Colors.white),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : TabBarView(
-              controller: _tabs,
-              children: [
-                _buildLiveMap(),
-                _buildGeofenceList(),
-              ],
-            ),
     );
+
+    final floatingActionButton = FloatingActionButton(
+      onPressed: () => _tabs.index == 1 ? _showAddGeofence() : _load(),
+      backgroundColor: AppColors.accent,
+      child: Icon(_tabs.index == 1 ? Icons.add : Icons.refresh, color: Colors.white),
+    );
+
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+        : TabBarView(
+            controller: _tabs,
+            children: [
+              _buildLiveMap(),
+              _buildGeofenceList(),
+            ],
+          );
+
+    if (widget.userRole == 'manager') {
+      return ManagerBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
+    } else if (widget.userRole == 'trackman') {
+      return TrackmanBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
+    }
+    return AdminBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
   }
 
   Widget _buildLiveMap() {

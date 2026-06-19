@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../models/department.dart';
-import '../../../services/api_service.dart';
+import '../../theme/app_theme.dart';
+import '../../models/department.dart';
+import '../../services/api_service.dart';
+import '../departments/department_detail_sheet.dart';
+import 'admin_base_screen.dart';
 
-class AdminDepartmentsTab extends StatefulWidget {
-  const AdminDepartmentsTab({super.key});
+class AdminDepartmentsScreen extends StatefulWidget {
+  const AdminDepartmentsScreen({super.key});
 
   @override
-  State<AdminDepartmentsTab> createState() => _AdminDepartmentsTabState();
+  State<AdminDepartmentsScreen> createState() => _AdminDepartmentsScreenState();
 }
 
-class _AdminDepartmentsTabState extends State<AdminDepartmentsTab> {
+class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
   List<Department> _departments = [];
   List<Map<String, dynamic>> _assignments = [];
   bool _loading = true;
@@ -42,8 +44,8 @@ class _AdminDepartmentsTabState extends State<AdminDepartmentsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return AdminBaseScreen(
+      title: 'Departments',
       body: Column(
         children: [
           _buildTopBar(),
@@ -150,7 +152,11 @@ class _AdminDepartmentsTabState extends State<AdminDepartmentsTab> {
                     children: [
                       Icon(existing == null ? Icons.add_business_rounded : Icons.edit_road_rounded, color: AppColors.primary, size: 24),
                       const SizedBox(width: 8),
-                      Text(existing == null ? 'Add Department' : 'Edit Department', style: AppTextStyles.heading2),
+                      Expanded(child: Text(existing == null ? 'Add Department' : 'Edit Department', style: AppTextStyles.heading2)),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -245,18 +251,27 @@ class _DepartmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => DepartmentDetailSheet(department: department),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               Container(
@@ -302,7 +317,8 @@ class _DepartmentCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }
 

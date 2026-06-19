@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../models/vehicle.dart';
-import '../../../services/api_service.dart';
-import '../admin_vehicle_detail_screen.dart';
+import '../../theme/app_theme.dart';
+import '../../models/vehicle.dart';
+import '../../services/api_service.dart';
+import 'admin_vehicle_detail_screen.dart';
+import 'admin_base_screen.dart';
 
-class AdminFleetTab extends StatefulWidget {
-  const AdminFleetTab({super.key});
+class AdminFleetScreen extends StatefulWidget {
+  const AdminFleetScreen({super.key});
 
   @override
-  State<AdminFleetTab> createState() => _AdminFleetTabState();
+  State<AdminFleetScreen> createState() => _AdminFleetScreenState();
 }
 
-class _AdminFleetTabState extends State<AdminFleetTab> {
+class _AdminFleetScreenState extends State<AdminFleetScreen> {
   List<Vehicle> _vehicles = [];
   List<Map<String, dynamic>> _assignments = [];
   bool _loading = true;
@@ -59,8 +60,8 @@ class _AdminFleetTabState extends State<AdminFleetTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return AdminBaseScreen(
+      title: 'Fleet Management',
       body: Column(
         children: [
           _buildTopBar(),
@@ -80,7 +81,7 @@ class _AdminFleetTabState extends State<AdminFleetTab> {
                             maxCrossAxisExtent: 340,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            mainAxisExtent: 160,
+                            mainAxisExtent: 176,
                           ),
                           itemCount: _filtered.length,
                           itemBuilder: (_, i) {

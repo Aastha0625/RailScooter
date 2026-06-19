@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'map_picker_screen.dart';
+import 'trackman_base_screen.dart';
 
 class TrackmanReportIssueScreen extends StatefulWidget {
   const TrackmanReportIssueScreen({super.key});
@@ -181,9 +182,8 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Report an Issue'),
+    return TrackmanBaseScreen(
+      appBar: const CustomAppBar(title: 'Report Issue'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Form(

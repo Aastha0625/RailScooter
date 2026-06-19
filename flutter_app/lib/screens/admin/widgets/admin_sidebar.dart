@@ -77,15 +77,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 22),
-                ),
+                Image.asset('assets/images/logo.png', height: 40),
                 const SizedBox(width: 12),
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

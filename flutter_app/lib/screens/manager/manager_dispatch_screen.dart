@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
 import '../../widgets/custom_app_bar.dart';
+import 'manager_base_screen.dart';
 
 class ManagerDispatchScreen extends StatefulWidget {
   const ManagerDispatchScreen({super.key});
@@ -83,9 +86,8 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Fleet Dispatch'),
+    return ManagerBaseScreen(
+      appBar: const CustomAppBar(title: 'Dispatch Vehicles'),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : _activeDispatches.isEmpty

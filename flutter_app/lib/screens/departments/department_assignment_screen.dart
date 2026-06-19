@@ -3,6 +3,10 @@ import '../../theme/app_theme.dart';
 import '../../models/department.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../manager/manager_base_screen.dart';
+import '../manager/manager_profile_screen.dart';
+import 'department_detail_sheet.dart';
 
 class DepartmentAssignmentScreen extends StatefulWidget {
   const DepartmentAssignmentScreen({super.key});
@@ -64,9 +68,12 @@ class _DepartmentAssignmentScreenState extends State<DepartmentAssignmentScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Department Assignment'),
+    return ManagerBaseScreen(
+      appBar: CustomAppBar(
+        title: 'Departments',
+        onProfileTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerProfileScreen()));
+        },
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: AppColors.accent,
@@ -325,37 +332,46 @@ class _DepartmentCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.cardBorder),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.business_outlined, color: AppColors.primary, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(department.name, style: AppTextStyles.heading3),
-                  Text(department.code, style: AppTextStyles.caption.copyWith(color: AppColors.accent, fontWeight: FontWeight.w600)),
-                ],
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: () {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => DepartmentDetailSheet(department: department),
+      );
+    },
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.business_outlined, color: AppColors.primary, size: 22),
               ),
-            ),
-            IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: onEdit, color: AppColors.textSecondary),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(department.name, style: AppTextStyles.heading3),
+                    Text(department.code, style: AppTextStyles.caption.copyWith(color: AppColors.accent, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: onEdit, color: AppColors.textSecondary),
+            ],
+          ),
         if (department.headName.isNotEmpty || department.location.isNotEmpty) ...[
           const SizedBox(height: 10),
           if (department.headName.isNotEmpty)
@@ -386,7 +402,8 @@ class _DepartmentCard extends StatelessWidget {
         ),
       ],
     ),
-  );
+  ),
+);
 }
 
 class _AssignmentCard extends StatelessWidget {

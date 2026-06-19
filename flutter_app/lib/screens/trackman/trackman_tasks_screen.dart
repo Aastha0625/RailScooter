@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'trackman_task_details_screen.dart';
+import '../../widgets/custom_app_bar.dart';
+import 'trackman_base_screen.dart';
 
 class TrackmanTasksScreen extends StatelessWidget {
   const TrackmanTasksScreen({super.key});
@@ -37,18 +39,8 @@ class TrackmanTasksScreen extends StatelessWidget {
       },
     ];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        title: const Text(
-          "My Tasks",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+    return TrackmanBaseScreen(
+      appBar: const CustomAppBar(title: "My Tasks"),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView.builder(

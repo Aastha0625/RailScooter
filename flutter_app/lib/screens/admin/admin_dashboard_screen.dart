@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../theme/app_theme.dart';
-import '../../../services/api_service.dart';
-import '../../../models/alert_rule.dart';
-import '../../../models/vehicle_alert.dart';
+import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
+import '../../models/alert_rule.dart';
+import '../../models/vehicle_alert.dart';
+import 'admin_base_screen.dart';
 
-class AdminOverviewTab extends StatefulWidget {
-  const AdminOverviewTab({super.key});
+class AdminDashboardScreen extends StatefulWidget {
+  const AdminDashboardScreen({super.key});
 
   @override
-  State<AdminOverviewTab> createState() => _AdminOverviewTabState();
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
-class _AdminOverviewTabState extends State<AdminOverviewTab> {
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _loading = true;
   int _pendingCount = 0;
   int _totalUsers = 0;
@@ -78,72 +79,78 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+      return const AdminBaseScreen(
+        title: 'Overview',
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
       );
     }
 
-    return RefreshIndicator(
-      color: AppColors.accent,
-      onRefresh: _loadData,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Page Title
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+    return AdminBaseScreen(
+      title: 'Overview',
+      body: RefreshIndicator(
+        color: AppColors.accent,
+        onRefresh: _loadData,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            // Page Title
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.dashboard_rounded,
+                      color: AppColors.accent, size: 24),
                 ),
-                child: const Icon(Icons.dashboard_rounded,
-                    color: AppColors.accent, size: 24),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Overview',
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary)),
-                    Text('Admin command center',
-                        style: TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary)),
-                  ],
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Overview',
+                          style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary)),
+                      Text('Admin command center',
+                          style: TextStyle(
+                              fontSize: 13, color: AppColors.textSecondary)),
+                    ],
+                  ),
                 ),
-              ),
-              _buildRefreshButton(),
-            ],
-          ),
-          const SizedBox(height: 24),
+                _buildRefreshButton(),
+              ],
+            ),
+            const SizedBox(height: 24),
 
-          // Stat Cards Grid
-          _buildStatCardsGrid(),
-          const SizedBox(height: 28),
+            // Stat Cards Grid
+            _buildStatCardsGrid(),
+            const SizedBox(height: 28),
 
-          // Alerts Preview
-          _buildSectionHeader(Icons.warning_amber_rounded, 'Live Alerts Preview', AppColors.severityHigh),
-          const SizedBox(height: 12),
-          _buildAlertsPreview(),
-          const SizedBox(height: 28),
+            // Alerts Preview
+            _buildSectionHeader(Icons.warning_amber_rounded, 'Live Alerts Preview', AppColors.severityHigh),
+            const SizedBox(height: 12),
+            _buildAlertsPreview(),
+            const SizedBox(height: 28),
 
-          // Rules Preview
-          _buildSectionHeader(Icons.rule_outlined, 'Active Rules', AppColors.primary),
-          const SizedBox(height: 12),
-          _buildRulesPreview(),
-          const SizedBox(height: 28),
+            // Rules Preview
+            _buildSectionHeader(Icons.rule_outlined, 'Active Rules', AppColors.primary),
+            const SizedBox(height: 12),
+            _buildRulesPreview(),
+            const SizedBox(height: 28),
 
-          // Activity Feed
-          _buildSectionHeader(
-              Icons.timeline_rounded, 'Live Activity Feed', AppColors.primary),
-          const SizedBox(height: 12),
-          _buildActivityFeed(),
-        ],
+            // Activity Feed
+            _buildSectionHeader(
+                Icons.timeline_rounded, 'Live Activity Feed', AppColors.primary),
+            const SizedBox(height: 12),
+            _buildActivityFeed(),
+          ],
+        ),
       ),
     );
   }
@@ -181,7 +188,7 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: 14,
             crossAxisSpacing: 14,
-            mainAxisExtent: 110,
+            mainAxisExtent: 120,
           ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'package:intl/intl.dart';
+import 'trackman_base_screen.dart';
 
 class TrackmanHistoryScreen extends StatefulWidget {
   const TrackmanHistoryScreen({super.key});
@@ -61,8 +62,7 @@ class _TrackmanHistoryScreenState extends State<TrackmanHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return TrackmanBaseScreen(
       appBar: const CustomAppBar(title: 'My Ride History'),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))

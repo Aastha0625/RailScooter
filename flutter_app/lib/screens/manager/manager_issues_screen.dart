@@ -5,6 +5,8 @@ import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
 import '../../services/railway_routing_service.dart';
 import '../../widgets/custom_app_bar.dart';
+import 'manager_base_screen.dart';
+
 class ManagerIssuesScreen extends StatefulWidget {
   const ManagerIssuesScreen({super.key});
 
@@ -86,9 +88,8 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Issue Management'),
+    return ManagerBaseScreen(
+      appBar: const CustomAppBar(title: 'Reported Issues'),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : _issues.isEmpty

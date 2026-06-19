@@ -5,7 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
-import 'tabs/admin_fleet_tab.dart';
+import 'admin_fleet_screen.dart';
 
 class AdminVehicleDetailScreen extends StatefulWidget {
   final Vehicle vehicle;

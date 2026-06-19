@@ -13,6 +13,7 @@ import '../../widgets/custom_drawer.dart';
 import '../alerts/alerts_rules_screen.dart';
 import '../departments/department_assignment_screen.dart';
 import 'manager_profile_screen.dart';
+import 'manager_base_screen.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -68,22 +69,8 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Operations Hub'),
-      drawer: CustomDrawer(
-        roleTitle: 'Manager Operations',
-        menuItems: [
-          CustomDrawer.buildDrawerItem(context, Icons.dashboard_outlined, 'Operations Hub', () => Navigator.pop(context)),
-          CustomDrawer.buildDrawerItem(context, Icons.apartment, 'Departments', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentAssignmentScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.send_rounded, 'Dispatch Vehicles', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerDispatchScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.report_problem_outlined, 'Issue Management', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerIssuesScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.map_outlined, 'Fleet Tracking', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.electric_scooter_outlined, 'Vehicle Status', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.notifications_active_outlined, 'Alerts & Rules', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.person_outline, 'My Profile', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerProfileScreen())); }),
-        ],
-      ),
+    return ManagerBaseScreen(
+      title: 'Operations Hub',
       body: RefreshIndicator(
         onRefresh: _loadStats,
         color: AppColors.accent,

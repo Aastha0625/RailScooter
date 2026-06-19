@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -6,6 +7,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? additionalActions;
   final double height;
   final PreferredSizeWidget? bottom;
+  final VoidCallback? onProfileTap;
 
   const CustomAppBar({
     super.key,
@@ -13,6 +15,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.additionalActions,
     this.height = 52.0, // Reduced height to make it less overwhelming
     this.bottom,
+    this.onProfileTap,
   });
 
   @override
@@ -26,13 +29,61 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         if (additionalActions != null) ...additionalActions!,
         Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: Center(
-            child: Image.asset(
-              'assets/images/logo.png',
-              width: 100, // Explicit width instead of aggressive scaling
-              fit: BoxFit.contain,
-            ),
+          padding: const EdgeInsets.only(right: 8),
+          child: PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle, color: Colors.white, size: 28),
+            offset: const Offset(0, 40),
+            onSelected: (value) async {
+              if (value == 'profile') {
+                if (onProfileTap != null) onProfileTap!();
+              } else if (value == 'logout') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w700)),
+                    content: const Text('Are you sure you want to log out?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Log Out'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await Supabase.instance.client.auth.signOut();
+                  if (context.mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              if (onProfileTap != null)
+                const PopupMenuItem(
+                  value: 'profile',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline, color: AppColors.textPrimary, size: 16),
+                      SizedBox(width: 8),
+                      Text('View Profile', style: TextStyle(fontSize: 13)),
+                    ],
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded, color: AppColors.severityCritical, size: 16),
+                    SizedBox(width: 8),
+                    Text('Log Out', style: TextStyle(fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],

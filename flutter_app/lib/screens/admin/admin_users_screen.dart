@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../models/user.dart';
-import '../../../models/department.dart';
-import '../../../services/api_service.dart';
+import '../../theme/app_theme.dart';
+import '../../models/user.dart';
+import '../../models/department.dart';
+import '../../services/api_service.dart';
+import 'admin_base_screen.dart';
 
-class AdminUsersTab extends StatefulWidget {
-  const AdminUsersTab({super.key});
+class AdminUsersScreen extends StatefulWidget {
+  const AdminUsersScreen({super.key});
 
   @override
-  State<AdminUsersTab> createState() => _AdminUsersTabState();
+  State<AdminUsersScreen> createState() => _AdminUsersScreenState();
 }
 
-class _AdminUsersTabState extends State<AdminUsersTab> with SingleTickerProviderStateMixin {
+class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<AppUser> _users = [];
   List<AppUser> _pending = [];
@@ -46,8 +47,8 @@ class _AdminUsersTabState extends State<AdminUsersTab> with SingleTickerProvider
         
         setState(() {
           _users = results[0] as List<AppUser>;
-          _pending = _users.where((u) => u.approvalStatus == \'pending\').toList();
-          _current = _users.where((u) => u.approvalStatus != \'pending\').toList();
+          _pending = _users.where((u) => u.approvalStatus == 'pending').toList();
+          _current = _users.where((u) => u.approvalStatus != 'pending').toList();
           _departments = results[1] as List<Department>;
 
           _loading = false;
@@ -94,8 +95,8 @@ class _AdminUsersTabState extends State<AdminUsersTab> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return AdminBaseScreen(
+      title: 'Users & Approvals',
       body: Column(
         children: [
           _buildTopBar(),
@@ -497,6 +498,38 @@ class _AdminUserDetailSheetState extends State<AdminUserDetailSheet> {
       widget.onUpdated();
     }
   }
+  
+  Future<void> _approve() async {
+    setState(() => _saving = true);
+    try {
+      await ApiService.updateUserApproval(widget.user.id, 'approved');
+      if (mounted) {
+        widget.onUpdated();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User approved.')));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _reject() async {
+    setState(() => _saving = true);
+    try {
+      await ApiService.updateUserApproval(widget.user.id, 'rejected');
+      if (mounted) {
+        widget.onUpdated();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User rejected.')));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -583,7 +616,7 @@ class _AdminUserDetailSheetState extends State<AdminUserDetailSheet> {
                 children: [
                   const Text('Edit Profile', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                   const SizedBox(height: 16),
-                  _field('Full Name', _nameCtrl, Icons.person_outline_rounded),
+                  _field('Email Address', _nameCtrl, Icons.email_outlined),
                   const SizedBox(height: 12),
                   _field('Employee ID', _empIdCtrl, Icons.badge_outlined),
                   const SizedBox(height: 12),

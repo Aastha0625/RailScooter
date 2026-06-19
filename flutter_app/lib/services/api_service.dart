@@ -194,6 +194,16 @@ class ApiService {
     return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
   }
 
+  /// Fetch users by department
+  static Future<List<AppUser>> fetchUsersByDepartment(String deptId) async {
+    final data = await _sb
+        .from('app_users')
+        .select('*, departments(name)')
+        .eq('department_id', deptId)
+        .order('full_name', ascending: true);
+    return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
+  }
+
   /// Fetch users by approval status
   static Future<List<AppUser>> fetchUsersByApprovalStatus(String status) async {
     final data = await _sb

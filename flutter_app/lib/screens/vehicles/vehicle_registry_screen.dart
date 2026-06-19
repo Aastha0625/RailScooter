@@ -3,12 +3,17 @@ import '../../theme/app_theme.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
+import '../manager/manager_base_screen.dart';
+import '../trackman/trackman_base_screen.dart';
 import 'vehicle_registration_screen.dart';
 import 'vehicle_details_sheet.dart';
+import '../admin/admin_vehicle_detail_screen.dart';
 
 class VehicleRegistryScreen extends StatefulWidget {
   final String? initialStatusFilter;
-  const VehicleRegistryScreen({super.key, this.initialStatusFilter});
+  final String userRole;
+  const VehicleRegistryScreen({super.key, this.initialStatusFilter, this.userRole = 'admin'});
 
   @override
   State<VehicleRegistryScreen> createState() => _VehicleRegistryScreenState();
@@ -79,40 +84,38 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: 'Vehicle Registry'),
-      body: Column(
-        children: [
-          _buildHeader(),
-          _buildFilters(),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-                : _filtered.isEmpty
-                    ? _buildEmpty()
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        color: AppColors.accent,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filtered.length,
-                          itemBuilder: (ctx, i) => _VehicleListItem(
-                            vehicle: _filtered[i],
-                            onView: () => _showDetails(_filtered[i]),
-                            onEdit: () => _openEdit(_filtered[i]),
-                          ),
+    final body = Column(
+      children: [
+        _buildHeader(),
+        _buildFilters(),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+              : _filtered.isEmpty
+                  ? _buildEmpty()
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      color: AppColors.accent,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filtered.length,
+                        itemBuilder: (ctx, i) => _VehicleListItem(
+                          vehicle: _filtered[i],
+                          onView: () => _showDetails(_filtered[i]),
+                          onEdit: () => _openEdit(_filtered[i]),
                         ),
                       ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistrationScreen())).then((_) => _load()),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Vehicle', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
+                    ),
+        ),
+      ],
     );
+
+    if (widget.userRole == 'manager') {
+      return ManagerBaseScreen(title: 'Vehicle Registry', body: body);
+    } else if (widget.userRole == 'trackman') {
+      return TrackmanBaseScreen(title: 'Vehicle Registry', body: body);
+    }
+    return AdminBaseScreen(title: 'Vehicle Registry', body: body);
   }
 
   Widget _buildHeader() {
@@ -225,11 +228,11 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
   }
 
   void _showDetails(Vehicle v) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => VehicleDetailsSheet(vehicle: v),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminVehicleDetailScreen(vehicle: v),
+      ),
     );
   }
 

@@ -5,9 +5,13 @@ import '../../models/alert_rule.dart';
 import '../../models/vehicle_alert.dart';
 import '../../services/api_service.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
+import '../manager/manager_base_screen.dart';
+import '../trackman/trackman_base_screen.dart';
 
 class AlertsRulesScreen extends StatefulWidget {
-  const AlertsRulesScreen({super.key});
+  final String userRole;
+  const AlertsRulesScreen({super.key, this.userRole = 'admin'});
 
   @override
   State<AlertsRulesScreen> createState() => _AlertsRulesScreenState();
@@ -73,55 +77,62 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
   Widget build(BuildContext context) {
     final unackCount = _events.where((e) => !e.isAcknowledged).length;
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Alerts & Rules',
-        bottom: TabBar(
-          controller: _tabs,
-          indicatorColor: AppColors.accent,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          tabs: [
-            const Tab(text: 'Rules'),
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Events'),
-                  if (unackCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.severityCritical,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text('$unackCount', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: _tabs.index == 0
-          ? FloatingActionButton(
-              onPressed: _showAddRule,
-              backgroundColor: AppColors.accent,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : TabBarView(
-              controller: _tabs,
+    final appBar = CustomAppBar(
+      title: 'Alerts & Rules',
+      bottom: TabBar(
+        controller: _tabs,
+        indicatorColor: AppColors.accent,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.white60,
+        tabs: [
+          const Tab(text: 'Rules'),
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildRulesList(),
-                _buildEventsList(),
+                const Text('Events'),
+                if (unackCount > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: AppColors.severityCritical,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text('$unackCount', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
+                  ),
+                ],
               ],
             ),
+          ),
+        ],
+      ),
     );
+
+    final floatingActionButton = _tabs.index == 0
+        ? FloatingActionButton(
+            onPressed: _showAddRule,
+            backgroundColor: AppColors.accent,
+            child: const Icon(Icons.add, color: Colors.white),
+          )
+        : null;
+
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+        : TabBarView(
+            controller: _tabs,
+            children: [
+              _buildRulesList(),
+              _buildEventsList(),
+            ],
+          );
+
+    if (widget.userRole == 'manager') {
+      return ManagerBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
+    } else if (widget.userRole == 'trackman') {
+      return TrackmanBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
+    }
+    return AdminBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
   }
 
   Widget _buildRulesList() {

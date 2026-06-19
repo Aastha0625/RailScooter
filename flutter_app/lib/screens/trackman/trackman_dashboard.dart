@@ -11,6 +11,7 @@ import 'trackman_profile_screen.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/custom_drawer.dart';
 import '../alerts/alerts_rules_screen.dart';
+import 'trackman_base_screen.dart';
 class TrackmanDashboardScreen extends StatefulWidget {
   const TrackmanDashboardScreen({super.key});
 
@@ -119,22 +120,8 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Trackman Dashboard'),
-      drawer: CustomDrawer(
-        roleTitle: 'Trackman Portal',
-        menuItems: [
-          CustomDrawer.buildDrawerItem(context, Icons.dashboard_outlined, 'Dashboard', () => Navigator.pop(context)),
-          CustomDrawer.buildDrawerItem(context, Icons.assignment_outlined, 'My Tasks', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute( builder: (_) => const TrackmanTasksScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.history, 'My Ride History', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanHistoryScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.shield_outlined, 'Safety Guidelines', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanSafetyScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.map_outlined, 'My Current Zone', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanGeofencingScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.report_problem_outlined, 'Report an Issue', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanReportIssueScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.notifications_active_outlined, 'Alerts & Rules', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen())); }),
-          CustomDrawer.buildDrawerItem(context, Icons.person_outline, 'My Profile', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanProfileScreen())); }),
-        ],
-      ),
+    return TrackmanBaseScreen(
+      title: 'Trackman Dashboard',
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
