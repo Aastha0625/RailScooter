@@ -192,7 +192,12 @@ class _AppSidebarState extends State<AppSidebar> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: item.onTap,
+          onTap: () {
+            if (Scaffold.maybeOf(context)?.isDrawerOpen == true) {
+              Navigator.of(context).pop(); // Close drawer
+            }
+            item.onTap();
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(

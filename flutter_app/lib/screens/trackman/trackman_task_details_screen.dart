@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../services/mock_data_store.dart';
 
 class TrackmanTaskDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> task;
@@ -16,7 +17,13 @@ class TrackmanTaskDetailsScreen extends StatefulWidget {
 
 class _TrackmanTaskDetailsScreenState
     extends State<TrackmanTaskDetailsScreen> {
-  bool isCompleted = false;
+  late bool isCompleted;
+
+  @override
+  void initState() {
+    super.initState();
+    isCompleted = widget.task['status'] == 'Completed';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +153,11 @@ class _TrackmanTaskDetailsScreenState
               onChanged: (value) {
                 setState(() {
                   isCompleted = value;
+                  task['status'] = value ? 'Completed' : 'Assigned';
                 });
+                if (task['id'] != null) {
+                  MockDataStore().updateTaskStatus(task['id'], value ? 'Completed' : 'Assigned');
+                }
               },
             ),
 

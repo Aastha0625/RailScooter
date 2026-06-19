@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import 'trackman_history_screen.dart';
 import 'trackman_safety_screen.dart';
 import 'trackman_geofencing_screen.dart';
 import 'trackman_report_issue_screen.dart';
+import 'trackman_task_details_screen.dart';
+import '../../services/mock_data_store.dart';
 import 'trackman_tasks_screen.dart';
 import 'trackman_notifications_screen.dart';
 import 'trackman_profile_screen.dart';
@@ -80,9 +83,17 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
         }
       }
 
+      bool savedUnlockedState = false;
+
+      if (mounted) {
+        final prefs = await SharedPreferences.getInstance();
+        savedUnlockedState = prefs.getBool('run_active_${user.id}') ?? false;
+      }
+
       if (mounted) {
         setState(() {
           _activeAssignment = assignmentData;
+          _isUnlocked = savedUnlockedState;
           _loading = false;
         });
       }
@@ -93,30 +104,34 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
   }
 
   Future<void> _checkNotifications() async {
-  try {
-    final client = Supabase.instance.client;
+    try {
+      final client = Supabase.instance.client;
+      final prefs = await SharedPreferences.getInstance();
+      final lastReadStr = prefs.getString('last_notification_read_time');
+      final lastRead = lastReadStr != null ? DateTime.parse(lastReadStr) : DateTime.fromMillisecondsSinceEpoch(0);
 
-    final broadcasts = await client
-        .from('broadcast_messages')
-        .select('id')
-        .or('target_role.eq.trackman,target_role.eq.all');
+      final broadcastsResponse = await client
+          .from('broadcast_messages')
+          .select('id, created_at')
+          .or('target_role.eq.trackman,target_role.eq.all');
+          
+      final alertsResponse = await client
+          .from('vehicle_alerts')
+          .select('id, created_at')
+          .eq('is_acknowledged', false);
 
-    final alerts = await client
-        .from('vehicle_alerts')
-        .select('id')
-        .eq('is_acknowledged', false);
+      final hasUnreadBroadcasts = broadcastsResponse.any((b) => DateTime.parse(b['created_at']).isAfter(lastRead));
+      final hasUnreadAlerts = alertsResponse.any((a) => DateTime.parse(a['created_at']).isAfter(lastRead));
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      hasNotifications =
-          broadcasts.isNotEmpty || alerts.isNotEmpty;
-    });
-
-  } catch (e) {
-    debugPrint('Notification error: $e');
+      setState(() {
+        hasNotifications = hasUnreadBroadcasts || hasUnreadAlerts;
+      });
+    } catch (e) {
+      debugPrint('Notification error: $e');
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -128,12 +143,142 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
           children: [
             _buildActiveVehicleHero(),
             const SizedBox(height: 16),
+            _buildAnalyticsTitle('Quick Actions'),
+            _buildQuickActionCards(context),
+            const SizedBox(height: 16),
             _buildSafetyAndLocationCard(),
             const SizedBox(height: 16),
             _buildEmergencyActions(),
+            const SizedBox(height: 24),
+            _buildAnalyticsTitle('My Recent Tasks'),
+            _buildRecentTasks(),
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCards(BuildContext context) {
+    final modules = [
+      _ModuleItem(icon: Icons.assignment_outlined, label: 'Tasks', color: Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanTasksScreen()))),
+      _ModuleItem(icon: Icons.history, label: 'History', color: Colors.purple, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanHistoryScreen()))),
+      _ModuleItem(icon: Icons.shield_outlined, label: 'Safety', color: Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanSafetyScreen()))),
+      _ModuleItem(icon: Icons.report_problem_outlined, label: 'Report', color: Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanReportIssueScreen()))),
+    ];
+
+    return SizedBox(
+      height: 75,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        scrollDirection: Axis.horizontal,
+        itemCount: modules.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, i) => _buildActionCard(modules[i]),
+      ),
+    );
+  }
+
+  Widget _buildActionCard(_ModuleItem module) {
+    return GestureDetector(
+      onTap: module.onTap,
+      child: Container(
+        width: 72,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(module.icon, color: module.color, size: 24),
+            const SizedBox(height: 6),
+            Text(module.label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentTasks() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+          valueListenable: MockDataStore().tasks,
+          builder: (context, tasks, _) {
+            if (tasks.isEmpty) {
+              return const Text('No recent tasks');
+            }
+            final task1 = tasks[0];
+            final task2 = tasks.length > 1 ? tasks[1] : null;
+
+            return Column(
+              children: [
+                _buildDummyTask(task1),
+                if (task2 != null) ...[
+                  const Divider(height: 24),
+                  _buildDummyTask(task2),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDummyTask(Map<String, dynamic> task) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TrackmanTaskDetailsScreen(task: task),
+          ),
+        );
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: task["color"], shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(task["title"], style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(task["priority"], style: TextStyle(color: task["color"], fontSize: 12, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: AppColors.textLight, size: 20),
+        ],
       ),
     );
   }
@@ -195,7 +340,26 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
                 Switch(
                   value: _isUnlocked,
                   activeThumbColor: Colors.greenAccent,
-                  onChanged: (val) {
+                  onChanged: (val) async {
+                    final prefs = await SharedPreferences.getInstance();
+                    final uid = Supabase.instance.client.auth.currentUser?.id;
+                    if (val) {
+                      final isChecked = prefs.getBool('safety_checked_$uid') ?? false;
+                      if (!isChecked) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please complete the Safety Guidelines checklist first.'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                        return; // Prevent turning on
+                      }
+                    }
+                    if (uid != null) {
+                      await prefs.setBool('run_active_$uid', val);
+                    }
                     setState(() {
                       _isUnlocked = val;
                     });
@@ -331,42 +495,21 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text('Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const TrackmanReportIssueScreen(),));
-                  },
-                  icon: const Icon(Icons.report_problem, color: Colors.white, size: 20),
-                  label: const Text('Report Issue', style: TextStyle(color: Colors.white, fontSize: 13)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Emergency Stop Triggered!'), backgroundColor: Colors.red));
-                  },
-                  icon: const Icon(Icons.warning, color: Colors.white, size: 20),
-                  label: const Text('SOS / Stop', style: TextStyle(color: Colors.white, fontSize: 13)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Emergency Stop Triggered!'), backgroundColor: Colors.red));
+                },
+                icon: const Icon(Icons.warning, color: Colors.white, size: 20),
+                label: const Text('SOS / Stop', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ],
@@ -376,4 +519,12 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
     );
   }
 
+}
+
+class _ModuleItem {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _ModuleItem({required this.icon, required this.label, required this.color, required this.onTap});
 }
