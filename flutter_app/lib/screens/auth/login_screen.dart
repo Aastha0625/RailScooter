@@ -430,10 +430,15 @@ class _LoginScreenState extends State<LoginScreen> {
     required IconData icon,
     bool isEmail = false,
     bool isPassword = false,
+    bool isPhone = false,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+      keyboardType: isEmail
+          ? TextInputType.emailAddress
+          : isPhone
+              ? TextInputType.phone
+              : TextInputType.text,
       obscureText: isPassword ? _obscurePassword : false,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
@@ -472,6 +477,9 @@ class _LoginScreenState extends State<LoginScreen> {
       validator: (v) {
         if (v == null || v.isEmpty) return '$label is required';
         if (isEmail && !v.contains('@')) return 'Enter a valid email';
+        if (isPhone && (v.length < 10 || !RegExp(r'^[0-9+\-\s()]+$').hasMatch(v))) {
+          return 'Enter a valid phone number (at least 10 digits)';
+        }
         if (isPassword && _isSignUp && v.length < 6) return 'Password must be at least 6 characters';
       },
     );
