@@ -75,7 +75,6 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
         final matchSearch = q.isEmpty ||
             v.vehicleId.toLowerCase().contains(q) ||
             v.variant.toLowerCase().contains(q) ||
-            (v.departmentName?.toLowerCase().contains(q) ?? false) ||
             (v.assignedUserName?.toLowerCase().contains(q) ?? false);
         return matchStatus && matchVariant && matchSearch;
       }).toList();
@@ -153,7 +152,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
           TextField(
             controller: _searchCtrl,
             decoration: const InputDecoration(
-              hintText: 'Search vehicle ID, user, department...',
+              hintText: 'Search vehicle ID, user...',
               prefixIcon: Icon(Icons.search, color: AppColors.textLight, size: 20),
             ),
           ),
@@ -309,14 +308,11 @@ class _VehicleListItem extends StatelessWidget {
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
             Text(vehicle.batteryCapacity, style: AppTextStyles.caption),
-            if (vehicle.departmentName != null || vehicle.assignedUserName != null) ...[
+            if (vehicle.assignedUserName != null) ...[
               const SizedBox(height: 8),
               const Divider(height: 1),
               const SizedBox(height: 8),
-              if (vehicle.departmentName != null)
-                _InfoRow(icon: Icons.business_outlined, text: vehicle.departmentName!),
-              if (vehicle.assignedUserName != null)
-                _InfoRow(icon: Icons.person_outline, text: vehicle.assignedUserName!),
+              _InfoRow(icon: Icons.person_outline, text: vehicle.assignedUserName!),
             ],
             const SizedBox(height: 8),
             Row(

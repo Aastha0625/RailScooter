@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// Central place for all app-wide constants.
 /// Update these when deploying to production.

@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
@@ -176,54 +175,26 @@ class _AdminVehicleDetailScreenState extends State<AdminVehicleDetailScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            FlutterMap(
-              options: MapOptions(
-                initialCenter: _dummyLatLng,
-                initialZoom: 14,
+        child: GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: _dummyLatLng,
+            zoom: 14,
+          ),
+          markers: {
+            Marker(
+              markerId: const MarkerId('vehicle'),
+              position: _dummyLatLng,
+              infoWindow: InfoWindow(
+                title: _vehicle.vehicleId,
+                snippet: '${_dummySpeed.toStringAsFixed(1)} km/h · $_dummyBattery% battery',
               ),
-              children: [
-                TileLayer(
-                  // Using Google Maps tiles template
-                  urlTemplate: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-                  userAgentPackageName: 'com.piscoot.app',
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _dummyLatLng,
-                      width: 50,
-                      height: 50,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(_vehicle.vehicleId, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ),
-                          const Icon(Icons.location_on, color: AppColors.accent, size: 28),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
             ),
-            Positioned(
-              left: 12,
-              bottom: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                color: Colors.white.withValues(alpha: 0.8),
-                child: const Text('Google Maps Layer', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-              ),
-            ),
-          ],
+          },
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          compassEnabled: false,
         ),
       ),
     );

@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../models/alert_rule.dart';
 import '../../models/vehicle_alert.dart';
 import '../../services/api_service.dart';
+import '../../utils/formatters.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../admin/admin_base_screen.dart';
 import '../manager/manager_base_screen.dart';
@@ -198,9 +199,7 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final descCtrl = TextEditingController(text: existing?.description ?? '');
     final valueCtrl = TextEditingController(text: existing?.conditionValue.toString() ?? '');
-    final unitCtrl = TextEditingController(text: existing?.conditionUnit ?? '');
     String ruleType = existing?.ruleType ?? 'speed';
-    String severity = existing?.severity ?? 'medium';
     String operator_ = existing?.conditionOperator ?? 'gt';
     bool emailNotif = existing?.notificationEmail ?? true;
     bool pushNotif = existing?.notificationPush ?? true;
@@ -243,31 +242,33 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
                     children: [
                       Expanded(child: _enumDropdown('Rule Type', ruleType,
                         ['speed', 'battery', 'geofence', 'idle_time', 'movement'],
-                        (v) => setModal(() => ruleType = v!))),
-                      const SizedBox(width: 8),
-                      Expanded(child: _enumDropdown('Severity', severity,
-                        ['low', 'medium', 'high', 'critical'],
-                        (v) => setModal(() => severity = v!))),
+                        (v) => setModal(() => ruleType = v!),
+                        displayMap: {'speed': 'Speed', 'battery': 'Battery', 'geofence': 'Geofence', 'idle_time': 'Idle Time', 'movement': 'Movement'},
+                      )),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(child: _enumDropdown('Operator', operator_,
                         ['gt', 'lt', 'eq', 'gte', 'lte'],
-                        (v) => setModal(() => operator_ = v!))),
-                      const SizedBox(width: 8),
-                      Expanded(child: TextFormField(
-                        controller: valueCtrl,
-                        decoration: const InputDecoration(labelText: 'Value *'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                        (v) => setModal(() => operator_ = v!),
+                        displayMap: {'gt': '>', 'lt': '<', 'eq': '=', 'gte': '>=', 'lte': '<='},
                       )),
                       const SizedBox(width: 8),
-                      Expanded(child: TextFormField(
-                        controller: unitCtrl,
-                        decoration: const InputDecoration(labelText: 'Unit'),
-                      )),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          controller: valueCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Value *',
+                            suffixText: Formatters.getSiUnit(ruleType),
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v!.isEmpty ? 'Required' : null,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -285,10 +286,10 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
                           'name': nameCtrl.text.trim(),
                           'description': descCtrl.text.trim(),
                           'rule_type': ruleType,
-                          'severity': severity,
+                          'severity': 'medium', // Default
                           'condition_operator': operator_,
                           'condition_value': double.tryParse(valueCtrl.text) ?? 0,
-                          'condition_unit': unitCtrl.text.trim(),
+                          'condition_unit': Formatters.getSiUnit(ruleType),
                           'notification_email': emailNotif,
                           'notification_push': pushNotif,
                           'notification_sms': smsNotif,
@@ -322,7 +323,7 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     _load();
   }
 
-  Widget _enumDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) =>
+  Widget _enumDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged, {Map<String, String>? displayMap}) =>
     Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -339,7 +340,10 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
             child: DropdownButton<String>(
               value: value,
               isExpanded: true,
-              items: items.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+              items: items.map((e) => DropdownMenuItem(
+                value: e,
+                child: Text(displayMap != null && displayMap.containsKey(e) ? displayMap[e]! : e, style: const TextStyle(fontSize: 12)),
+              )).toList(),
               onChanged: onChanged,
             ),
           ),
@@ -394,10 +398,16 @@ class _RuleCard extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            _Tag(label: rule.ruleType, color: AppColors.primary),
-            const SizedBox(width: 6),
-            _Tag(label: '${rule.conditionOperator} ${rule.conditionValue} ${rule.conditionUnit}', color: AppColors.textSecondary),
-            const Spacer(),
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _Tag(label: rule.ruleType, color: AppColors.primary),
+                  _Tag(label: Formatters.formatRule(rule.ruleType, rule.conditionOperator, rule.conditionValue, rule.conditionUnit), color: AppColors.textSecondary),
+                ],
+              ),
+            ),
             IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: onEdit, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
           ],
         ),
@@ -456,8 +466,11 @@ class _AlertEventCard extends StatelessWidget {
                   _SeverityDot(severity: alert.severity),
                 ],
               ),
-              Text(alert.message.isNotEmpty ? alert.message : alert.alertType,
-                  style: AppTextStyles.bodySmall),
+              const SizedBox(height: 2),
+              Text(
+                Formatters.formatAlertMessage(alert.alertType, alert.message.isNotEmpty ? alert.message : alert.alertType),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+              ),
               const SizedBox(height: 2),
               Text(DateFormat('MMM d, HH:mm').format(alert.createdAt.toLocal()),
                   style: AppTextStyles.caption),

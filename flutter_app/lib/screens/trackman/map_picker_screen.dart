@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../theme/app_theme.dart';
 
 class MapPickerScreen extends StatefulWidget {
@@ -17,13 +16,18 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   late LatLng _selectedLocation;
-  late final MapController _mapController;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
     super.initState();
     _selectedLocation = widget.initialLocation;
-    _mapController = MapController();
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -48,37 +52,30 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       ),
       body: Stack(
         children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _selectedLocation,
-              initialZoom: 15.0,
-              onTap: (tapPosition, point) {
-                setState(() {
-                  _selectedLocation = point;
-                });
-              },
+          GoogleMap(
+            onMapCreated: (controller) => _mapController = controller,
+            initialCameraPosition: CameraPosition(
+              target: _selectedLocation,
+              zoom: 15.0,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.pisolve.railscooter',
+            // Tap on map to place marker
+            onTap: (LatLng point) {
+              setState(() {
+                _selectedLocation = point;
+              });
+            },
+            markers: {
+              Marker(
+                markerId: const MarkerId('selected'),
+                position: _selectedLocation,
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                  BitmapDescriptor.hueRed,
+                ),
               ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: _selectedLocation,
-                    width: 60,
-                    height: 60,
-                    child: const Icon(
-                      Icons.location_on,
-                      color: AppColors.severityCritical,
-                      size: 48,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            },
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: true,
+            mapToolbarEnabled: false,
           ),
           Positioned(
             top: 16,
@@ -112,8 +109,10 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () {
-          // Center back to the currently selected point
-          _mapController.move(_selectedLocation, 15.0);
+          // Centre back to the currently selected point
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(_selectedLocation, 15.0),
+          );
         },
         child: const Icon(Icons.my_location, color: Colors.white),
       ),

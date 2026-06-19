@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/user.dart';
-import '../../models/department.dart';
 import '../../services/api_service.dart';
 import 'admin_base_screen.dart';
 
@@ -17,7 +16,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
   List<AppUser> _users = [];
   List<AppUser> _pending = [];
   List<AppUser> _current = [];
-  List<Department> _departments = [];
   bool _loading = true;
   String _searchQuery = '';
   String _filterRole = 'all';   // all | admin | manager | trackman | suspended
@@ -41,7 +39,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
     try {
       final results = await Future.wait([
         ApiService.fetchAllUsersAdmin(),
-        ApiService.fetchDepartments(),
       ]);
       if (mounted) {
         
@@ -49,7 +46,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
           _users = results[0] as List<AppUser>;
           _pending = _users.where((u) => u.approvalStatus == 'pending').toList();
           _current = _users.where((u) => u.approvalStatus != 'pending').toList();
-          _departments = results[1] as List<Department>;
 
           _loading = false;
         });
@@ -141,7 +137,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
         itemCount: _filteredPending.length,
         itemBuilder: (_, i) => _UserCard(
           user: _filteredPending[i],
-          departments: _departments,
           onTap: () => _openDetail(_filteredPending[i]),
         ),
       ),
@@ -158,7 +153,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
         itemCount: _filtered.length,
         itemBuilder: (_, i) => _UserCard(
           user: _filtered[i],
-          departments: _departments,
           onTap: () => _openDetail(_filtered[i]),
         ),
       ),
@@ -266,7 +260,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
       backgroundColor: Colors.transparent,
       builder: (_) => AdminUserDetailSheet(
         user: user,
-        departments: _departments,
         onUpdated: _load,
       ),
     );
@@ -275,10 +268,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
 
 class _UserCard extends StatelessWidget {
   final AppUser user;
-  final List<Department> departments;
   final VoidCallback onTap;
 
-  const _UserCard({required this.user, required this.departments, required this.onTap});
+  const _UserCard({required this.user, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -331,7 +323,6 @@ class _UserCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     [
-                      if (user.departmentName != null) user.departmentName!,
                       if (user.phone.isNotEmpty) user.phone,
                       if (user.employeeId != null) 'ID: ',
                     ].join(' · '),
@@ -390,13 +381,11 @@ class _RoleBadge extends StatelessWidget {
 /// ─── User Detail / Edit Bottom Sheet ───────────────────────────────────────
 class AdminUserDetailSheet extends StatefulWidget {
   final AppUser user;
-  final List<Department> departments;
   final VoidCallback onUpdated;
 
   const AdminUserDetailSheet({
     super.key,
     required this.user,
-    required this.departments,
     required this.onUpdated,
   });
 
@@ -409,7 +398,6 @@ class _AdminUserDetailSheetState extends State<AdminUserDetailSheet> {
   late TextEditingController _empIdCtrl;
   late TextEditingController _phoneCtrl;
   late String _selectedRole;
-  late String? _selectedDeptId;
   bool _saving = false;
 
   @override
@@ -419,7 +407,6 @@ class _AdminUserDetailSheetState extends State<AdminUserDetailSheet> {
     _empIdCtrl = TextEditingController(text: widget.user.employeeId ?? '');
     _phoneCtrl = TextEditingController(text: widget.user.phone);
     _selectedRole   = widget.user.role;
-    _selectedDeptId = widget.user.departmentId;
   }
 
   @override
@@ -438,7 +425,6 @@ class _AdminUserDetailSheetState extends State<AdminUserDetailSheet> {
         'employee_id':  _empIdCtrl.text.trim().isEmpty ? null : _empIdCtrl.text.trim(),
         'phone':        _phoneCtrl.text.trim(),
         'role':         _selectedRole,
-        'department_id': _selectedDeptId,
       });
       await ApiService.logActivity(
         eventType: 'user_edited',
@@ -631,17 +617,7 @@ class _AdminUserDetailSheetState extends State<AdminUserDetailSheet> {
                     display: (v) => v.capitalize(),
                     onChanged: (v) => setState(() => _selectedRole = v!),
                   ),
-                  const SizedBox(height: 12),
-                  // Department dropdown
-                  _label('Department'),
-                  const SizedBox(height: 6),
-                  _dropdown<String?>(
-                    value: _selectedDeptId,
-                    items: [null, ...widget.departments.map((d) => d.id)],
-                    display: (v) => v == null ? 'No Department' : widget.departments.firstWhere((d) => d.id == v).name,
-                    onChanged: (v) => setState(() => _selectedDeptId = v),
-                  ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/app_constants.dart';
 import '../models/alert_rule.dart';
-import '../models/department.dart';
 import '../models/geofence.dart';
 import '../models/user.dart';
 import '../models/vehicle.dart';
@@ -148,36 +147,7 @@ class ApiService {
     await _request('DELETE', '/vehicles/$id');
   }
 
-  // -------- DEPARTMENTS --------
 
-  static Future<List<Department>> fetchDepartments() async {
-    return _list(await _request('GET', '/departments'))
-        .map((json) => Department.fromJson(_map(json)))
-        .toList();
-  }
-
-  static Future<Department> createDepartment(
-    Map<String, dynamic> data,
-  ) async {
-    return Department.fromJson(
-      _map(await _request('POST', '/departments', body: data)),
-    );
-  }
-
-  static Future<Department> updateDepartment(
-    String id,
-    Map<String, dynamic> data,
-  ) async {
-    return Department.fromJson(
-      _map(await _request('PUT', '/departments/$id', body: data)),
-    );
-  }
-
-  static Future<void> deleteDepartment(String id) async {
-    await _request('DELETE', '/departments/$id');
-  }
-
-  // -------- USERS --------
 
   static Future<List<AppUser>> fetchUsers() async {
     return _list(await _request('GET', '/users'))
@@ -185,22 +155,11 @@ class ApiService {
         .toList();
   }
 
-  /// Fetch all users directly via Supabase (admin use — bypasses backend filter)
   static Future<List<AppUser>> fetchAllUsersAdmin() async {
     final data = await _sb
         .from('app_users')
-        .select('*, departments(name)')
+        .select('*')
         .order('created_at', ascending: false);
-    return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
-  }
-
-  /// Fetch users by department
-  static Future<List<AppUser>> fetchUsersByDepartment(String deptId) async {
-    final data = await _sb
-        .from('app_users')
-        .select('*, departments(name)')
-        .eq('department_id', deptId)
-        .order('full_name', ascending: true);
     return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
   }
 
@@ -208,7 +167,7 @@ class ApiService {
   static Future<List<AppUser>> fetchUsersByApprovalStatus(String status) async {
     final data = await _sb
         .from('app_users')
-        .select('*, departments(name)')
+        .select('*')
         .eq('approval_status', status)
         .order('created_at', ascending: false);
     return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
@@ -273,13 +232,11 @@ class ApiService {
 
   static Future<void> createAssignment({
     required String vehicleId,
-    String? departmentId,
     String? assignedUserId,
     String? notes,
   }) async {
     await _request('POST', '/assignments', body: {
       'vehicle_id': vehicleId,
-      'department_id': departmentId,
       'assigned_user_id': assignedUserId,
       'notes': notes ?? '',
     });
@@ -420,6 +377,36 @@ class ApiService {
         .subscribe();
   }
 
+  /// Subscribe to alert_events for real-time updates.
+  static RealtimeChannel subscribeToAlertEvents(
+    void Function(Map<String, dynamic> payload) onInsert,
+  ) {
+    return _sb
+        .channel('alert_events_inserts_admin')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'alert_events',
+          callback: (payload) => onInsert(payload.newRecord),
+        )
+        .subscribe();
+  }
+
+  /// Subscribe to alert_rules for real-time updates.
+  static RealtimeChannel subscribeToAlertRules(
+    void Function(Map<String, dynamic> payload) onUpdate,
+  ) {
+    return _sb
+        .channel('alert_rules_updates_admin')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'alert_rules',
+          callback: (payload) => onUpdate(payload.newRecord),
+        )
+        .subscribe();
+  }
+
   // -------- BROADCAST MESSAGES --------
 
   static Future<List<Map<String, dynamic>>> fetchBroadcasts() async {
@@ -450,5 +437,25 @@ class ApiService {
       'target_role': targetRole,
       'sent_by': uid,
     });
+  }
+
+  // -------- TRACKMAN TASKS --------
+
+  static Future<List<Map<String, dynamic>>> fetchTasks({String? assignedToUserId}) async {
+    var query = _sb.from('trackman_tasks').select('*, app_users(full_name), vehicles(vehicle_id, variant)');
+    if (assignedToUserId != null) {
+      query = query.eq('assigned_to', assignedToUserId);
+    }
+    final data = await query.order('created_at', ascending: false);
+    return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+  }
+
+  static Future<Map<String, dynamic>> createTask(Map<String, dynamic> data) async {
+    final response = await _sb.from('trackman_tasks').insert(data).select().single();
+    return Map<String, dynamic>.from(response);
+  }
+
+  static Future<void> updateTaskStatus(String taskId, String status) async {
+    await _sb.from('trackman_tasks').update({'status': status}).eq('id', taskId);
   }
 }

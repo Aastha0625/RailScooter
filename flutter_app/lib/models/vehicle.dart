@@ -13,7 +13,6 @@ class Vehicle {
   final bool trackmanSafetyEnabled;
   final String notes;
   final DateTime createdAt;
-  final String? departmentName;
   final String? assignedUserName;
 
   const Vehicle({
@@ -31,22 +30,16 @@ class Vehicle {
     required this.trackmanSafetyEnabled,
     required this.notes,
     required this.createdAt,
-    this.departmentName,
     this.assignedUserName,
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
-    String? deptName;
     String? userName;
 
     if (json['vehicle_assignments'] != null) {
       final assignments = json['vehicle_assignments'] as List;
       final active = assignments.where((a) => a['is_active'] == true).toList();
       if (active.isNotEmpty) {
-        deptName = active.first['departments']?['name'];
-        // When using an explicit FK hint in the query, Supabase returns the
-        // nested user object under the FK alias key. Fall back to 'app_users'
-        // for any queries that don't use the hint.
         final userObj = active.first['app_users!vehicle_assignments_assigned_user_id_fkey']
             ?? active.first['app_users'];
         userName = userObj?['full_name'];
@@ -72,7 +65,6 @@ class Vehicle {
       trackmanSafetyEnabled: json['trackman_safety_enabled'] ?? false,
       notes: json['notes'] ?? '',
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      departmentName: deptName,
       assignedUserName: userName,
     );
   }

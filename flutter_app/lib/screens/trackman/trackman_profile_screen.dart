@@ -15,8 +15,7 @@ class TrackmanProfileScreen extends StatelessWidget {
     final data = await Supabase.instance.client
         .from('app_users')
         .select('''
-          *,
-          departments(name)
+          id, full_name, employee_id, phone, role, is_active, created_at, approval_status
         ''')
         .eq('id', user.id)
         .single();
@@ -128,12 +127,6 @@ class TrackmanProfileScreen extends StatelessWidget {
                     Icons.badge,
                     'Employee ID',
                     user['employee_id'] ?? 'Not Assigned',
-                  ),
-
-                  _buildInfoTile(
-                    Icons.apartment,
-                    'Department',
-                    user['departments']?['name'] ?? 'Not Assigned',
                   ),
 
                   _buildInfoTile(

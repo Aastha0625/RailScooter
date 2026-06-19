@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'login_screen.dart';
+import 'registration_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -230,7 +231,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                         Navigator.push(
                           context,
                           PageRouteBuilder(
-                            pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(initialSignUp: true),
+                            pageBuilder: (context, animation, secondaryAnimation) => const RegistrationScreen(),
                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
                               return FadeTransition(opacity: animation, child: child);
                             },
@@ -269,7 +270,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                         Navigator.push(
                           context,
                           PageRouteBuilder(
-                            pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(initialSignUp: false),
+                            pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
                               return FadeTransition(opacity: animation, child: child);
                             },

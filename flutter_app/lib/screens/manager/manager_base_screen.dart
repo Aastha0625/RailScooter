@@ -5,13 +5,13 @@ import '../../widgets/app_sidebar.dart';
 import '../../widgets/custom_app_bar.dart';
 
 import 'manager_dashboard.dart';
-import '../departments/department_assignment_screen.dart';
 import 'manager_dispatch_screen.dart';
 import 'manager_issues_screen.dart';
 import '../tracking/geofence_tracking_screen.dart';
 import '../vehicles/vehicle_registry_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
 import 'manager_profile_screen.dart';
+import 'manager_task_assignment_screen.dart';
 
 class ManagerBaseScreen extends StatefulWidget {
   final String? title;
@@ -61,13 +61,13 @@ class _ManagerBaseScreenState extends State<ManagerBaseScreen> {
     return [
       SidebarItem(
         icon: Icons.dashboard_outlined,
-        label: 'Operations Hub',
-        onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const ManagerDashboardScreen()), (route) => false),
+        label: 'Overview',
+        onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagerDashboardScreen())),
       ),
       SidebarItem(
-        icon: Icons.apartment,
-        label: 'Departments',
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentAssignmentScreen())),
+        icon: Icons.assignment_add,
+        label: 'Assign Task',
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerTaskAssignmentScreen())),
       ),
       SidebarItem(
         icon: Icons.send_rounded,

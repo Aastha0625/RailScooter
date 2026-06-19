@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../../services/railway_routing_service.dart';
 import '../../widgets/custom_app_bar.dart';
@@ -244,6 +243,8 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
   }
 }
 
+// ─── Issue mini-map with Google Maps + route polyline ────────────────────────
+
 class _IssueMapWidget extends StatefulWidget {
   final double lat;
   final double lng;
@@ -257,6 +258,7 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
   bool _loadingRoute = true;
   RailwayRouteResult? _routeResult;
   String? _errorMessage;
+  GoogleMapController? _mapController;
 
   late LatLng _artLocation;
   late LatLng _incidentLocation;
@@ -266,9 +268,14 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
     super.initState();
     _incidentLocation = LatLng(widget.lat, widget.lng);
     // Dummy ART Train location to simulate routing
-    // (We place it nearby to allow the API to find a route)
     _artLocation = LatLng(widget.lat + 0.05, widget.lng + 0.05);
     _fetchRoute();
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchRoute() async {
@@ -286,45 +293,54 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
     }
   }
 
+  Set<Marker> get _markers {
+    final markers = <Marker>{
+      Marker(
+        markerId: const MarkerId('incident'),
+        position: _routeResult?.snappedEnd ?? _incidentLocation,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      ),
+    };
+    if (_routeResult != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('train'),
+        position: _routeResult!.snappedStart,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      ));
+    }
+    return markers;
+  }
+
+  Set<Polyline> get _polylines {
+    if (_routeResult == null) return {};
+    return {
+      Polyline(
+        polylineId: const PolylineId('route'),
+        points: _routeResult!.points,
+        width: 4,
+        color: Colors.blueAccent,
+      ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    final center = _routeResult?.snappedEnd ?? _incidentLocation;
+
     return Stack(
       children: [
-        FlutterMap(
-          options: MapOptions(
-            initialCenter: _routeResult?.snappedEnd ?? _incidentLocation,
-            initialZoom: 13.0,
-            interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.pisolve.railscooter',
-            ),
-            if (_routeResult != null)
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: _routeResult!.points,
-                    strokeWidth: 4.0,
-                    color: Colors.blueAccent,
-                  ),
-                ],
-              ),
-            MarkerLayer(
-              markers: [
-                if (_routeResult != null)
-                  Marker(
-                    point: _routeResult!.snappedStart,
-                    child: const Icon(Icons.train, color: Colors.blue, size: 28),
-                  ),
-                Marker(
-                  point: _routeResult?.snappedEnd ?? _incidentLocation,
-                  child: const Icon(Icons.location_on, color: Colors.red, size: 30),
-                ),
-              ],
-            ),
-          ],
+        GoogleMap(
+          onMapCreated: (c) => _mapController = c,
+          initialCameraPosition: CameraPosition(target: center, zoom: 13.0),
+          markers: _markers,
+          polylines: _polylines,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          scrollGesturesEnabled: false,
+          zoomGesturesEnabled: false,
+          rotateGesturesEnabled: false,
+          tiltGesturesEnabled: false,
         ),
         if (_loadingRoute)
           const Center(child: CircularProgressIndicator())

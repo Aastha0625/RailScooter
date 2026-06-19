@@ -14,8 +14,7 @@ class ManagerProfileScreen extends StatelessWidget {
     final data = await Supabase.instance.client
         .from('app_users')
         .select('''
-          *,
-          departments(name)
+          id, full_name, employee_id, phone, role, is_active, created_at
         ''')
         .eq('id', user.id)
         .single();
@@ -63,7 +62,6 @@ class ManagerProfileScreen extends StatelessWidget {
                   Text(user['full_name'] ?? 'Manager', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   _buildInfoTile(Icons.badge, 'Employee ID', user['employee_id'] ?? 'Not Assigned'),
-                  _buildInfoTile(Icons.apartment, 'Department', user['departments']?['name'] ?? 'Not Assigned'),
                   _buildInfoTile(Icons.phone, 'Phone', user['phone'] ?? 'Not Assigned'),
                   _buildInfoTile(Icons.work, 'Role', user['role']?.toString().toUpperCase() ?? 'MANAGER'),
                   _buildInfoTile(Icons.verified_user, 'Account Status', user['is_active'] == true ? 'Active' : 'Inactive'),

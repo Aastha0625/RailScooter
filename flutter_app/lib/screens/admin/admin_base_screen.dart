@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/app_sidebar.dart';
-import 'admin_dashboard_screen.dart';
+import '../tracking/geofence_tracking_screen.dart';
+
 import 'admin_users_screen.dart';
-import 'admin_departments_screen.dart';
+
 import 'admin_fleet_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_broadcast_screen.dart';
+import 'admin_tasks_screen.dart';
+import 'admin_activity_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
 import 'admin_profile_screen.dart';
 import '../../widgets/custom_app_bar.dart';
@@ -64,14 +67,19 @@ class _AdminBaseScreenState extends State<AdminBaseScreen> {
         onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
       ),
       SidebarItem(
+        icon: Icons.map_rounded,
+        label: 'Live Map & Zones',
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen(userRole: 'admin'))),
+      ),
+      SidebarItem(
+        icon: Icons.assignment,
+        label: 'Tasks',
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTasksScreen())),
+      ),
+      SidebarItem(
         icon: Icons.people_alt_rounded,
         label: 'Users',
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
-      ),
-      SidebarItem(
-        icon: Icons.business_outlined,
-        label: 'Departments',
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDepartmentsScreen())),
       ),
       SidebarItem(
         icon: Icons.electric_scooter_rounded,
@@ -92,6 +100,11 @@ class _AdminBaseScreenState extends State<AdminBaseScreen> {
         icon: Icons.campaign_rounded,
         label: 'Broadcast',
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminBroadcastScreen())),
+      ),
+      SidebarItem(
+        icon: Icons.timeline_rounded,
+        label: 'Activity Feed',
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminActivityScreen())),
       ),
     ];
   }

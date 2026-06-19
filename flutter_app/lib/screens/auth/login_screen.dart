@@ -4,8 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
-  final bool initialSignUp;
-  const LoginScreen({super.key, this.initialSignUp = false});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -18,38 +17,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
-  late bool _isSignUp;
   bool _obscurePassword = true;
   String? _error;
   String? _message;
   
-  // RBAC Selection
-  String _selectedRole = 'Trackman';
-  final List<String> _roles = ['Admin', 'Manager', 'Trackman'];
-
   // Theme Constants matching Welcome Screen
   final Color bgColor = const Color(0xFF0A1118);
   final Color glowColor = const Color(0xFFF97316);
 
-  List<String> _departmentsList = [];
+
 
   @override
   void initState() {
     super.initState();
-    _isSignUp = widget.initialSignUp;
-    _fetchDepartments();
   }
 
-  Future<void> _fetchDepartments() async {
-    try {
-      final response = await Supabase.instance.client.from('departments').select('name');
-      if (mounted) {
-        setState(() {
-          _departmentsList = (response as List).map((e) => e['name'].toString()).toList();
-        });
-      }
-    } catch (_) {}
-  }
+
 
   @override
   void dispose() {
@@ -69,54 +52,16 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      if (_isSignUp) {
-        // Sign Up Flow
-        final response = await Supabase.instance.client.auth.signUp(
-          email: _emailCtrl.text.trim(),
-          password: _passwordCtrl.text,
-          data: {
-            'full_name': _emailCtrl.text.trim(),
-            'role': _selectedRole.toLowerCase(),
-            'phone': _phoneCtrl.text.trim(),
-            'approval_status': 'pending',
-          },
-        );
-
-        // Also if department is provided, we can either pass it in data, or update app_users later
-        // passing department name might need trigger support. We will just pass departmentName here:
-        if (_departmentCtrl.text.trim().isNotEmpty) {
-           // We can't update app_users here easily if trigger overrides, but let's pass it in data
-           // We'll also try a direct update to app_users if trigger already created it.
-           // Since we can't reliably predict the trigger schema without RLS issues, we'll pass 'department_name' in data.
-           // Actually, we'll just put it in data above.
-        }
-        
-        if (mounted) {
-          setState(() {
-            _loading = false;
-            if (response.session == null) {
-              _message = 'Check your email to confirm your account.';
-            } else {
-              _message = 'Account created successfully!';
-              // Successfully signed up and session created
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            }
-          });
-        }
-      } else {
-        // Sign In Flow
-        await Supabase.instance.client.auth.signInWithPassword(
-          email: _emailCtrl.text.trim(),
-          password: _passwordCtrl.text,
-        );
-        
-        // Validation is now handled completely by _RoleRouter in main.dart
-        if (mounted) {
-          setState(() => _loading = false);
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      }
+      // Sign In Flow
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
+      );
       
+      if (mounted) {
+        setState(() => _loading = false);
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -206,9 +151,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 32),
         Text(
-          _isSignUp ? 'Create Account' : 'Welcome Back',
+          'Welcome Back',
           style: const TextStyle(
             color: Color(0xFFE2E8F0),
             fontSize: 32,
@@ -217,9 +161,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          _isSignUp ? 'Register for fleet access' : 'Sign in to manage your fleet',
-          style: const TextStyle(
+        const Text(
+          'Sign in to manage your fleet',
+          style: TextStyle(
             color: Color(0xFF94A3B8),
             fontSize: 16,
           ),
@@ -245,8 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (_isSignUp) _buildRoleSelector(),
-                if (_isSignUp) const SizedBox(height: 30),
+
                 
                 if (_error != null) ...[
                   Container(
@@ -286,45 +229,30 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                 ],
                 
-                if (_isSignUp) ...[
-                  _buildTextField(
-                    controller: _phoneCtrl,
-                    label: 'Phone Number',
-                    icon: Icons.phone_outlined,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDepartmentField(),
-                  const SizedBox(height: 16),
-                ],
-                _buildTextField(
+                TextFormField(
                   controller: _emailCtrl,
-                  label: 'Email Address',
-                  icon: Icons.email_outlined,
-                  isEmail: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDecoration('Email Address', Icons.email_outlined),
+                  validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
                 ),
                 const SizedBox(height: 16),
-                _buildTextField(
+                TextFormField(
                   controller: _passwordCtrl,
-                  label: 'Password',
-                  icon: Icons.lock_outline,
-                  isPassword: true,
+                  obscureText: _obscurePassword,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDecoration('Password', Icons.lock_outline).copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.white54),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  validator: (v) => (v == null || v.length < 6) ? 'Password too short' : null,
                 ),
                 const SizedBox(height: 32),
                 
-                Container(
+                SizedBox(
                   width: double.infinity,
                   height: 56,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: glowColor.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     style: ElevatedButton.styleFrom(
@@ -334,39 +262,34 @@ class _LoginScreenState extends State<LoginScreen> {
                       elevation: 0,
                     ),
                     child: _loading
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                _isSignUp ? 'Sign Up' : 'Sign In', 
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF431407))
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.arrow_forward, color: Color(0xFF431407), size: 20),
-                            ],
+                        ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text(
+                            'Log In',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF431407)),
                           ),
                   ),
                 ),
                 const SizedBox(height: 24),
+                
                 Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isSignUp = !_isSignUp;
-                        if (_isSignUp && _selectedRole == 'Admin') {
-                          _selectedRole = 'Trackman'; // Reset if Admin is selected when switching to Sign Up
-                        }
-                        _error = null;
-                        _message = null;
-                      });
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/register');
                     },
-                    child: Text(
-                      _isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up',
-                      style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 14, fontWeight: FontWeight.w500),
+                    child: RichText(
+                      text: const TextSpan(
+                        text: 'Don\'t have an account? ',
+                        style: TextStyle(color: Color(0xFF94A3B8)),
+                        children: [
+                          TextSpan(
+                            text: 'Sign Up',
+                            style: TextStyle(color: Color(0xFFF97316), fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -374,187 +297,25 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  Widget _buildRoleSelector() {
-    final availableRoles = _isSignUp 
-        ? _roles.where((role) => role != 'Admin').toList() 
-        : _roles;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white54),
+      prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+      filled: true,
+      fillColor: Colors.black.withValues(alpha: 0.25),
+      border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        borderSide: BorderSide.none,
       ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: availableRoles.map((role) {
-          final isSelected = _selectedRole == role;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedRole = role;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? glowColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: isSelected
-                      ? [BoxShadow(color: glowColor.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))]
-                      : [],
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  role,
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFF431407) : Colors.white60,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isEmail = false,
-    bool isPassword = false,
-    bool isPhone = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: isEmail
-          ? TextInputType.emailAddress
-          : isPhone
-              ? TextInputType.phone
-              : TextInputType.text,
-      obscureText: isPassword ? _obscurePassword : false,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
-        prefixIcon: Icon(icon, color: Colors.white54, size: 20),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: Colors.white54,
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              )
-            : null,
-        filled: true,
-        fillColor: Colors.black.withValues(alpha: 0.25),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: glowColor, width: 1.5),
-        ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: glowColor, width: 1.5),
       ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return '$label is required';
-        if (isEmail && !v.contains('@')) return 'Enter a valid email';
-        if (isPhone && (v.length < 10 || !RegExp(r'^[0-9+\-\s()]+$').hasMatch(v))) {
-          return 'Enter a valid phone number (at least 10 digits)';
-        }
-        if (isPassword && _isSignUp && v.length < 6) return 'Password must be at least 6 characters';
-      },
-    );
-  }
-
-  Widget _buildDepartmentField() {
-    return Autocomplete<String>(
-      optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty) return _departmentsList;
-        return _departmentsList.where((String option) {
-          return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-        });
-      },
-      onSelected: (String selection) {
-        _departmentCtrl.text = selection;
-      },
-      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
-        // Keep our internal controller in sync
-        fieldTextEditingController.addListener(() {
-          _departmentCtrl.text = fieldTextEditingController.text;
-        });
-        return TextFormField(
-          controller: fieldTextEditingController,
-          focusNode: fieldFocusNode,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Department',
-            labelStyle: const TextStyle(color: Colors.white54),
-            prefixIcon: const Icon(Icons.apartment_outlined, color: Colors.white54, size: 20),
-            filled: true,
-            fillColor: Colors.black.withValues(alpha: 0.25),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: glowColor, width: 1.5),
-            ),
-          ),
-          validator: (v) {
-            if (v == null || v.isEmpty) return 'Department is required';
-            return null;
-          },
-        );
-      },
-      optionsViewBuilder: (context, onSelected, options) {
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 4.0,
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(12),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(8),
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final String option = options.elementAt(index);
-                  return ListTile(
-                    title: Text(option, style: const TextStyle(color: Colors.white)),
-                    onTap: () => onSelected(option),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

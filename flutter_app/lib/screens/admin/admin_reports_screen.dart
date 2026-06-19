@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/vehicle_alert.dart';
 import '../../services/api_service.dart';
+import '../../utils/formatters.dart';
 import 'admin_base_screen.dart';
 
 class AdminReportsScreen extends StatefulWidget {
@@ -234,8 +235,8 @@ class _AlertCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(alert.message.isEmpty ? alert.alertType : alert.message,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      Text(Formatters.formatAlertMessage(alert.alertType, alert.message.isEmpty ? alert.alertType : alert.message),
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
                       Text('Vehicle: ${alert.vehicleId.substring(0, 8)}...',
                           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                     ],
