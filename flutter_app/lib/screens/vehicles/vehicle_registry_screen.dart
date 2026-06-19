@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
+import '../../widgets/custom_app_bar.dart';
 import 'vehicle_registration_screen.dart';
 import 'vehicle_details_sheet.dart';
 
@@ -79,22 +80,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vehicle Registry'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: const CustomAppBar(title: 'Vehicle Registry'),
       body: Column(
         children: [
           _buildHeader(),
@@ -114,12 +100,17 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
                             vehicle: _filtered[i],
                             onView: () => _showDetails(_filtered[i]),
                             onEdit: () => _openEdit(_filtered[i]),
-                            onDelete: () => _confirmDelete(_filtered[i]),
                           ),
                         ),
                       ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistrationScreen())).then((_) => _load()),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Add Vehicle', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -207,7 +198,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down, size: 18),
           items: [
-            DropdownMenuItem(value: null, child: Text('All', style: TextStyle(fontSize: 13))),
+            const DropdownMenuItem(value: null, child: Text('All', style: TextStyle(fontSize: 13))),
             ...items.map((s) => DropdownMenuItem(
               value: s,
               child: Text(s, style: const TextStyle(fontSize: 13)),
@@ -258,27 +249,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
     if (result == true) _load();
   }
 
-  Future<void> _confirmDelete(Vehicle v) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Vehicle'),
-        content: Text('Remove ${v.vehicleId} from the registry?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      await ApiService.deleteVehicle(v.id);
-      _load();
-    }
-  }
+
 
   Widget _pisolveTag() => Row(
     children: [
@@ -297,13 +268,11 @@ class _VehicleListItem extends StatelessWidget {
   final Vehicle vehicle;
   final VoidCallback onView;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const _VehicleListItem({
     required this.vehicle,
     required this.onView,
     required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -329,8 +298,6 @@ class _VehicleListItem extends StatelessWidget {
                 _IconAction(icon: Icons.visibility_outlined, onTap: onView),
                 const SizedBox(width: 8),
                 _IconAction(icon: Icons.edit_outlined, onTap: onEdit),
-                const SizedBox(width: 8),
-                _IconAction(icon: Icons.delete_outline, onTap: onDelete, color: AppColors.severityCritical),
               ],
             ),
             const SizedBox(height: 4),
@@ -351,9 +318,9 @@ class _VehicleListItem extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                if (vehicle.gpsEnabled) _FeatureTag(label: 'GPS', icon: Icons.gps_fixed, color: AppColors.statusActive),
+                if (vehicle.gpsEnabled) const _FeatureTag(label: 'GPS', icon: Icons.gps_fixed, color: AppColors.statusActive),
                 if (vehicle.gpsEnabled) const SizedBox(width: 8),
-                if (vehicle.trackmanEnabled) _FeatureTag(label: 'Trackman', icon: Icons.shield_outlined, color: AppColors.primary),
+                if (vehicle.trackmanEnabled) const _FeatureTag(label: 'Trackman', icon: Icons.shield_outlined, color: AppColors.primary),
                 const Spacer(),
                 Text(vehicle.firmwareVersion, style: AppTextStyles.caption.copyWith(color: AppColors.textLight)),
               ],

@@ -125,7 +125,7 @@ class VehicleDetailsSheet extends StatelessWidget {
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: Row(
       children: [
-        SizedBox(width: 120, child: Text(label + ':', style: AppTextStyles.label)),
+        SizedBox(width: 120, child: Text('$label:', style: AppTextStyles.label)),
         Expanded(child: Text(value, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500))),
       ],
     ),

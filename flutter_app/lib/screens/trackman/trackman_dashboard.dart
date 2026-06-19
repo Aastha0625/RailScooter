@@ -8,7 +8,9 @@ import 'trackman_report_issue_screen.dart';
 import 'trackman_tasks_screen.dart';
 import 'trackman_notifications_screen.dart';
 import 'trackman_profile_screen.dart';
-
+import '../../widgets/custom_app_bar.dart';
+import '../../widgets/custom_drawer.dart';
+import '../alerts/alerts_rules_screen.dart';
 class TrackmanDashboardScreen extends StatefulWidget {
   const TrackmanDashboardScreen({super.key});
 
@@ -119,28 +121,20 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Trackman Dashboard', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-  Padding(
-    padding: const EdgeInsets.only(right: 32),
-    child: Center(
-      child: Transform.scale(
-        scale: 6.0,
-        child: Image.asset(
-          'assets/images/logo.png',
-          height: 32,
-          fit: BoxFit.contain,
-        ),
+      appBar: const CustomAppBar(title: 'Trackman Dashboard'),
+      drawer: CustomDrawer(
+        roleTitle: 'Trackman Portal',
+        menuItems: [
+          CustomDrawer.buildDrawerItem(context, Icons.dashboard_outlined, 'Dashboard', () => Navigator.pop(context)),
+          CustomDrawer.buildDrawerItem(context, Icons.assignment_outlined, 'My Tasks', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute( builder: (_) => const TrackmanTasksScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.history, 'My Ride History', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanHistoryScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.shield_outlined, 'Safety Guidelines', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanSafetyScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.map_outlined, 'My Current Zone', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanGeofencingScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.report_problem_outlined, 'Report an Issue', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanReportIssueScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.notifications_active_outlined, 'Alerts & Rules', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.person_outline, 'My Profile', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanProfileScreen())); }),
+        ],
       ),
-    ),
-  ),
-],
-
-      ),
-      drawer: _buildDrawer(context),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,7 +207,7 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
               if (hasAssignment)
                 Switch(
                   value: _isUnlocked,
-                  activeColor: Colors.greenAccent,
+                  activeThumbColor: Colors.greenAccent,
                   onChanged: (val) {
                     setState(() {
                       _isUnlocked = val;
@@ -395,77 +389,4 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
     );
   }
 
-  // Reusing the exact same Drawer as the Admin Dashboard
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
-            child: Row(
-              children: [
-                Transform.scale(
-                  scale: 2.5,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 48,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(width: 24),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-                    Text('Fleet Management', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          _drawerItem(context, Icons.dashboard_outlined, 'Dashboard', () => Navigator.pop(context)),
-          _drawerItem(context, Icons.assignment_outlined, 'My Tasks', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute( builder: (_) => const TrackmanTasksScreen(),),);
-          },),                    
-          _drawerItem(context, Icons.history, 'My Ride History', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanHistoryScreen()));
-          }),
-          _drawerItem(context, Icons.shield_outlined, 'Safety Guidelines', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanSafetyScreen()));
-          }),
-          _drawerItem(context, Icons.map_outlined, 'My Current Zone', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanGeofencingScreen()));
-          }),
-          _drawerItem(context, Icons.report_problem_outlined, 'Report an Issue', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanReportIssueScreen()));
-          }),
-          _drawerItem(context, Icons.person_outline, 'My Profile', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanProfileScreen()));
-          }),
-          const Spacer(),
-          const Divider(height: 1),
-          _drawerItem(context, Icons.logout_rounded, 'Log Out', () async {
-            Navigator.pop(context);
-            await Supabase.instance.client.auth.signOut();
-          }),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _drawerItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 22),
-      title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-      onTap: onTap,
-    );
-  }
 }

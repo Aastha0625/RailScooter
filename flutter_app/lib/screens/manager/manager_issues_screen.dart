@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
 import '../../services/railway_routing_service.dart';
+import '../../widgets/custom_app_bar.dart';
 class ManagerIssuesScreen extends StatefulWidget {
   const ManagerIssuesScreen({super.key});
 
@@ -87,22 +88,7 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Issue Management', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: const CustomAppBar(title: 'Issue Management'),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : _issues.isEmpty
@@ -355,7 +341,7 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
             top: 8, right: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)]),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]),
               child: Text(
                 '${(_routeResult!.distanceMeters / 1000).toStringAsFixed(1)} km • ${_routeResult!.etaMinutes.toStringAsFixed(0)} min',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),

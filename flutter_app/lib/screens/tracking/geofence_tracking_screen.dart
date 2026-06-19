@@ -7,6 +7,7 @@ import '../../models/geofence.dart';
 import '../../models/vehicle_location.dart';
 import '../../services/api_service.dart';
 import '../../services/railway_routing_service.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class GeofenceTrackingScreen extends StatefulWidget {
   const GeofenceTrackingScreen({super.key});
@@ -121,13 +122,14 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('GeoFence & Tracking'),
+      appBar: CustomAppBar(
+        title: 'GeoFence & Tracking',
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: AppColors.accent,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           tabs: const [
             Tab(text: 'Live Map'),
             Tab(text: 'Geofences'),
@@ -301,7 +303,6 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
         itemCount: _geofences.length,
         itemBuilder: (_, i) => _GeofenceCard(
           geofence: _geofences[i],
-          onDelete: () => _deleteGeofence(_geofences[i]),
           onViewOnMap: () {
             _tabs.animateTo(0);
             Future.delayed(const Duration(milliseconds: 300), () {
@@ -440,25 +441,6 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
     );
   }
 
-  Future<void> _deleteGeofence(Geofence g) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Geofence'),
-        content: Text('Remove "${g.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) { await ApiService.deleteGeofence(g.id); _load(); }
-  }
-
   Color _hexToColor(String hex) {
     final cleaned = hex.replaceAll('#', '');
     return Color(int.parse('FF$cleaned', radix: 16));
@@ -498,10 +480,12 @@ class _VehicleMarker extends StatelessWidget {
 
 class _GeofenceCard extends StatelessWidget {
   final Geofence geofence;
-  final VoidCallback onDelete;
   final VoidCallback onViewOnMap;
 
-  const _GeofenceCard({required this.geofence, required this.onDelete, required this.onViewOnMap});
+  const _GeofenceCard({
+    required this.geofence,
+    required this.onViewOnMap,
+  });
 
   Color get _typeColor {
     switch (geofence.fenceType) {
@@ -541,12 +525,12 @@ class _GeofenceCard extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(Icons.location_on_outlined, size: 13, color: AppColors.textLight),
+            const Icon(Icons.location_on_outlined, size: 13, color: AppColors.textLight),
             const SizedBox(width: 4),
             Text('${geofence.centerLat.toStringAsFixed(4)}, ${geofence.centerLng.toStringAsFixed(4)}',
                 style: AppTextStyles.caption),
             const SizedBox(width: 8),
-            Icon(Icons.radio_button_unchecked, size: 13, color: AppColors.textLight),
+            const Icon(Icons.radio_button_unchecked, size: 13, color: AppColors.textLight),
             const SizedBox(width: 4),
             Text('${geofence.radiusMeters.round()}m', style: AppTextStyles.caption),
           ],
@@ -554,10 +538,10 @@ class _GeofenceCard extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            if (geofence.alertOnExit) _AlertTag(label: 'Exit Alert'),
+            if (geofence.alertOnExit) const _AlertTag(label: 'Exit Alert'),
             if (geofence.alertOnEnter) ...[
               const SizedBox(width: 6),
-              _AlertTag(label: 'Entry Alert'),
+              const _AlertTag(label: 'Entry Alert'),
             ],
             const Spacer(),
             TextButton.icon(
@@ -569,12 +553,6 @@ class _GeofenceCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(0, 28),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.severityCritical),
-              onPressed: onDelete,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
             ),
           ],
         ),

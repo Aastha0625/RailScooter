@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/custom_app_bar.dart';
 import 'map_picker_screen.dart';
 
 class TrackmanReportIssueScreen extends StatefulWidget {
@@ -182,11 +183,7 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Report an Issue'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-      ),
+      appBar: const CustomAppBar(title: 'Report an Issue'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Form(
@@ -278,7 +275,7 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
               const Text('Category', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 dropdownColor: Colors.white,
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(

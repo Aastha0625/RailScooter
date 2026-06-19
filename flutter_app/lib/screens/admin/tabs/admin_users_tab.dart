@@ -11,8 +11,11 @@ class AdminUsersTab extends StatefulWidget {
   State<AdminUsersTab> createState() => _AdminUsersTabState();
 }
 
-class _AdminUsersTabState extends State<AdminUsersTab> {
+class _AdminUsersTabState extends State<AdminUsersTab> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   List<AppUser> _users = [];
+  List<AppUser> _pending = [];
+  List<AppUser> _current = [];
   List<Department> _departments = [];
   bool _loading = true;
   String _searchQuery = '';
@@ -21,7 +24,15 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() { if (mounted) setState(() {}); });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -32,9 +43,13 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
         ApiService.fetchDepartments(),
       ]);
       if (mounted) {
+        
         setState(() {
           _users = results[0] as List<AppUser>;
+          _pending = _users.where((u) => u.approvalStatus == \'pending\').toList();
+          _current = _users.where((u) => u.approvalStatus != \'pending\').toList();
           _departments = results[1] as List<Department>;
+
           _loading = false;
         });
       }
@@ -44,7 +59,7 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
   }
 
   List<AppUser> get _filtered {
-    var list = _users;
+    var list = _current;
     if (_filterRole == 'suspended') {
       list = list.where((u) => !u.isActive).toList();
     } else if (_filterRole != 'all') {
@@ -62,6 +77,21 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
     return list;
   }
 
+  List<AppUser> get _filteredPending {
+    var list = _pending;
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((u) =>
+        u.fullName.toLowerCase().contains(q) ||
+        (u.employeeId?.toLowerCase().contains(q) ?? false) ||
+        u.phone.contains(q) ||
+        u.role.contains(q),
+      ).toList();
+    }
+    return list;
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,27 +99,67 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
       body: Column(
         children: [
           _buildTopBar(),
+          Container(
+            color: AppColors.primary,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: AppColors.accent,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white60,
+              tabs: const [
+                Tab(text: 'Requests'),
+                Tab(text: 'Current Users'),
+              ],
+            ),
+          ),
           _buildFilters(),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-                : _filtered.isEmpty
-                    ? const Center(child: Text('No users match filter', style: TextStyle(color: AppColors.textSecondary)))
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        color: AppColors.accent,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-                          itemCount: _filtered.length,
-                          itemBuilder: (_, i) => _UserCard(
-                            user: _filtered[i],
-                            departments: _departments,
-                            onTap: () => _openDetail(_filtered[i]),
-                          ),
-                        ),
-                      ),
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildPendingList(),
+                      _buildCurrentList(),
+                    ],
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPendingList() {
+    if (_filteredPending.isEmpty) return const Center(child: Text('No pending requests', style: TextStyle(color: AppColors.textSecondary)));
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: AppColors.accent,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        itemCount: _filteredPending.length,
+        itemBuilder: (_, i) => _UserCard(
+          user: _filteredPending[i],
+          departments: _departments,
+          onTap: () => _openDetail(_filteredPending[i]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentList() {
+    if (_filtered.isEmpty) return const Center(child: Text('No users match filter', style: TextStyle(color: AppColors.textSecondary)));
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: AppColors.accent,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        itemCount: _filtered.length,
+        itemBuilder: (_, i) => _UserCard(
+          user: _filtered[i],
+          departments: _departments,
+          onTap: () => _openDetail(_filtered[i]),
+        ),
       ),
     );
   }
@@ -260,8 +330,9 @@ class _UserCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     [
-                      if (user.employeeId != null) 'ID: ${user.employeeId}',
+                      if (user.departmentName != null) user.departmentName!,
                       if (user.phone.isNotEmpty) user.phone,
+                      if (user.employeeId != null) 'ID: ',
                     ].join(' · '),
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
@@ -476,17 +547,31 @@ class _AdminUserDetailSheetState extends State<AdminUserDetailSheet> {
                       ],
                     ),
                   ),
-                  TextButton.icon(
-                    icon: Icon(
-                      widget.user.isActive ? Icons.block_rounded : Icons.restore_rounded,
-                      size: 16,
+                  
+                  if (widget.user.approvalStatus == 'pending') ...[
+                    IconButton(
+                      icon: const Icon(Icons.check_circle, color: AppColors.statusActive),
+                      onPressed: _approve,
+                      tooltip: 'Approve',
                     ),
-                    label: Text(widget.user.isActive ? 'Suspend' : 'Reactivate'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: widget.user.isActive ? AppColors.severityCritical : AppColors.statusActive,
+                    IconButton(
+                      icon: const Icon(Icons.cancel, color: AppColors.severityCritical),
+                      onPressed: _reject,
+                      tooltip: 'Reject',
                     ),
-                    onPressed: _toggleSuspend,
-                  ),
+                  ] else
+                    TextButton.icon(
+                      icon: Icon(
+                        widget.user.isActive ? Icons.block_rounded : Icons.restore_rounded,
+                        size: 16,
+                      ),
+                      label: Text(widget.user.isActive ? 'Suspend' : 'Reactivate'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: widget.user.isActive ? AppColors.severityCritical : AppColors.statusActive,
+                      ),
+                      onPressed: _toggleSuspend,
+                    ),
+
                 ],
               ),
             ),

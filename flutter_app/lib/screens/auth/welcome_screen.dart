@@ -378,7 +378,7 @@ class _TrackPainter extends CustomPainter {
     paint.strokeWidth = 2.0;
     
     // Draw 4 ties with increasing spacing and width to simulate 3D perspective
-    final tiesCount = 4;
+    const tiesCount = 4;
     for (int i = 0; i < tiesCount; i++) {
       // Non-linear spacing for 3D effect (closer together at the top)
       final progress = (i / (tiesCount - 1));

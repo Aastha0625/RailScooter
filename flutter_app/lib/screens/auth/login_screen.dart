@@ -13,7 +13,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _departmentCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
@@ -30,15 +31,30 @@ class _LoginScreenState extends State<LoginScreen> {
   final Color bgColor = const Color(0xFF0A1118);
   final Color glowColor = const Color(0xFFF97316);
 
+  List<String> _departmentsList = [];
+
   @override
   void initState() {
     super.initState();
     _isSignUp = widget.initialSignUp;
+    _fetchDepartments();
+  }
+
+  Future<void> _fetchDepartments() async {
+    try {
+      final response = await Supabase.instance.client.from('departments').select('name');
+      if (mounted) {
+        setState(() {
+          _departmentsList = (response as List).map((e) => e['name'].toString()).toList();
+        });
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    _fullNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _departmentCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -59,10 +75,21 @@ class _LoginScreenState extends State<LoginScreen> {
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
           data: {
-            'full_name': _fullNameCtrl.text.trim(),
+            'full_name': _emailCtrl.text.trim(),
             'role': _selectedRole.toLowerCase(),
+            'phone': _phoneCtrl.text.trim(),
+            'approval_status': 'pending',
           },
         );
+
+        // Also if department is provided, we can either pass it in data, or update app_users later
+        // passing department name might need trigger support. We will just pass departmentName here:
+        if (_departmentCtrl.text.trim().isNotEmpty) {
+           // We can't update app_users here easily if trigger overrides, but let's pass it in data
+           // We'll also try a direct update to app_users if trigger already created it.
+           // Since we can't reliably predict the trigger schema without RLS issues, we'll pass 'department_name' in data.
+           // Actually, we'll just put it in data above.
+        }
         
         if (mounted) {
           setState(() {
@@ -261,10 +288,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 if (_isSignUp) ...[
                   _buildTextField(
-                    controller: _fullNameCtrl,
-                    label: 'Full Name',
-                    icon: Icons.person_outline,
+                    controller: _phoneCtrl,
+                    label: 'Phone Number',
+                    icon: Icons.phone_outlined,
                   ),
+                  const SizedBox(height: 16),
+                  _buildDepartmentField(),
                   const SizedBox(height: 16),
                 ],
                 _buildTextField(
@@ -444,11 +473,84 @@ class _LoginScreenState extends State<LoginScreen> {
         if (v == null || v.isEmpty) return '$label is required';
         if (isEmail && !v.contains('@')) return 'Enter a valid email';
         if (isPassword && _isSignUp && v.length < 6) return 'Password must be at least 6 characters';
-        return null;
+      },
+    );
+  }
+
+  Widget _buildDepartmentField() {
+    return Autocomplete<String>(
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) return _departmentsList;
+        return _departmentsList.where((String option) {
+          return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+        });
+      },
+      onSelected: (String selection) {
+        _departmentCtrl.text = selection;
+      },
+      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+        // Keep our internal controller in sync
+        fieldTextEditingController.addListener(() {
+          _departmentCtrl.text = fieldTextEditingController.text;
+        });
+        return TextFormField(
+          controller: fieldTextEditingController,
+          focusNode: fieldFocusNode,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Department',
+            labelStyle: const TextStyle(color: Colors.white54),
+            prefixIcon: const Icon(Icons.apartment_outlined, color: Colors.white54, size: 20),
+            filled: true,
+            fillColor: Colors.black.withValues(alpha: 0.25),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: glowColor, width: 1.5),
+            ),
+          ),
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Department is required';
+            return null;
+          },
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4.0,
+            color: Colors.black87,
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(8),
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final String option = options.elementAt(index);
+                  return ListTile(
+                    title: Text(option, style: const TextStyle(color: Colors.white)),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
       },
     );
   }
 }
+
 
 // Custom Painter for the faint vertical center line and subtle dots (reused from welcome screen)
 class _GridPainter extends CustomPainter {

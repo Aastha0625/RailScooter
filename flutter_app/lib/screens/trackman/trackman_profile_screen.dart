@@ -102,10 +102,10 @@ class TrackmanProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 25),
 
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 45,
                     backgroundColor: AppColors.primary,
-                    child: const Icon(
+                    child: Icon(
                       Icons.person,
                       size: 50,
                       color: Colors.white,

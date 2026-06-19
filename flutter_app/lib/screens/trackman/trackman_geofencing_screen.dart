@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class TrackmanGeofencingScreen extends StatelessWidget {
   const TrackmanGeofencingScreen({super.key});
@@ -9,15 +10,11 @@ class TrackmanGeofencingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Dummy coordinates for the demonstration map
-    final currentLocation = const LatLng(51.509865, -0.118092); // Example: London Waterloo area
+    const currentLocation = LatLng(51.509865, -0.118092); // Example: London Waterloo area
     
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('My Current Zone'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-      ),
+      appBar: const CustomAppBar(title: 'My Current Zone'),
       body: Stack(
         children: [
           FlutterMap(

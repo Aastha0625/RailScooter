@@ -6,8 +6,13 @@ import '../vehicles/vehicle_registry_screen.dart';
 import '../tracking/geofence_tracking_screen.dart';
 import 'manager_dispatch_screen.dart';
 import 'manager_issues_screen.dart';
-import 'manager_dispatch_history_screen.dart';
+import '../manager/manager_dispatch_history_screen.dart';
 import '../../services/api_service.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../../widgets/custom_drawer.dart';
+import '../alerts/alerts_rules_screen.dart';
+import '../departments/department_assignment_screen.dart';
+import 'manager_profile_screen.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -65,27 +70,20 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Operations Hub', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  height: 32,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
+      appBar: const CustomAppBar(title: 'Operations Hub'),
+      drawer: CustomDrawer(
+        roleTitle: 'Manager Operations',
+        menuItems: [
+          CustomDrawer.buildDrawerItem(context, Icons.dashboard_outlined, 'Operations Hub', () => Navigator.pop(context)),
+          CustomDrawer.buildDrawerItem(context, Icons.apartment, 'Departments', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentAssignmentScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.send_rounded, 'Dispatch Vehicles', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerDispatchScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.report_problem_outlined, 'Issue Management', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerIssuesScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.map_outlined, 'Fleet Tracking', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.electric_scooter_outlined, 'Vehicle Status', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.notifications_active_outlined, 'Alerts & Rules', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen())); }),
+          CustomDrawer.buildDrawerItem(context, Icons.person_outline, 'My Profile', () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerProfileScreen())); }),
         ],
       ),
-      drawer: _buildDrawer(context),
       body: RefreshIndicator(
         onRefresh: _loadStats,
         color: AppColors.accent,
@@ -246,8 +244,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                     if (event is FlTapUpEvent) {
                       final title = pieTouchResponse.touchedSection!.touchedSection!.title;
                       String? status;
-                      if (title == active.toString() && active > 0) status = 'active';
-                      else if (title == idle.toString() && idle > 0) status = 'idle';
+                      if (title == active.toString() && active > 0) {
+                        status = 'active';
+                      } else if (title == idle.toString() && idle > 0) status = 'idle';
                       else if (title == maintenance.toString() && maintenance > 0) status = 'maintenance';
                       else if (title == offline.toString() && offline > 0) status = 'offline';
 
@@ -425,62 +424,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
-            child: Row(
-              children: [
-                Transform.scale(
-                  scale: 2.5,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 48,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(width: 24),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-                    Text('Manager Operations', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          _drawerItem(context, Icons.dashboard_outlined, 'Operations Hub', () => Navigator.pop(context)),
-          _drawerItem(context, Icons.send_rounded, 'Dispatch Vehicles',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerDispatchScreen())); }),
-          _drawerItem(context, Icons.report_problem_outlined, 'Issue Management',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerIssuesScreen())); }),
-          _drawerItem(context, Icons.map_outlined, 'Fleet Tracking',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen())); }),
-          _drawerItem(context, Icons.electric_scooter_outlined, 'Vehicle Status',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen())); }),
-          const Spacer(),
-          const Divider(height: 1),
-          _drawerItem(context, Icons.logout_rounded, 'Log Out', () async {
-            Navigator.pop(context);
-            await Supabase.instance.client.auth.signOut();
-          }),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _drawerItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 22),
-      title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-      onTap: onTap,
-    );
-  }
 }
 
 class _ModuleItem {

@@ -109,7 +109,6 @@ class _DepartmentAssignmentScreenState extends State<DepartmentAssignmentScreen>
           department: _departments[i],
           assignmentCount: _assignments.where((a) => a['department_id'] == _departments[i].id).length,
           onEdit: () => _showEditDepartment(_departments[i]),
-          onDelete: () => _confirmDeleteDepartment(_departments[i]),
         ),
       ),
     );
@@ -268,25 +267,6 @@ class _DepartmentAssignmentScreenState extends State<DepartmentAssignmentScreen>
     );
   }
 
-  Future<void> _confirmDeleteDepartment(Department d) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Department'),
-        content: Text('Delete "${d.name}"? Active assignments will be unlinked.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) { await ApiService.deleteDepartment(d.id); _load(); }
-  }
-
   Future<void> _confirmRemoveAssignment(String id) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -337,13 +317,11 @@ class _DepartmentCard extends StatelessWidget {
   final Department department;
   final int assignmentCount;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const _DepartmentCard({
     required this.department,
     required this.assignmentCount,
     required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -376,7 +354,6 @@ class _DepartmentCard extends StatelessWidget {
               ),
             ),
             IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: onEdit, color: AppColors.textSecondary),
-            IconButton(icon: const Icon(Icons.delete_outline, size: 18), onPressed: onDelete, color: AppColors.severityCritical),
           ],
         ),
         if (department.headName.isNotEmpty || department.location.isNotEmpty) ...[

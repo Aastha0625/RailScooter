@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../models/alert_rule.dart';
 import '../../models/vehicle_alert.dart';
 import '../../services/api_service.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class AlertsRulesScreen extends StatefulWidget {
   const AlertsRulesScreen({super.key});
@@ -73,21 +74,8 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     final unackCount = _events.where((e) => !e.isAcknowledged).length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Alerts & Rules'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-        ],
+      appBar: CustomAppBar(
+        title: 'Alerts & Rules',
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: AppColors.accent,
@@ -159,7 +147,6 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
         itemBuilder: (_, i) => _RuleCard(
           rule: _rules[i],
           onEdit: () => _showEditRule(_rules[i]),
-          onDelete: () => _deleteRule(_rules[i]),
           onToggle: (v) => _toggleRule(_rules[i], v),
         ),
       ),
@@ -319,25 +306,6 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     _load();
   }
 
-  Future<void> _deleteRule(AlertRule rule) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Rule'),
-        content: Text('Delete "${rule.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) { await ApiService.deleteAlertRule(rule.id); _load(); }
-  }
-
   Future<void> _acknowledge(String id) async {
     await ApiService.acknowledgeAlert(id);
     _load();
@@ -379,10 +347,9 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
 class _RuleCard extends StatelessWidget {
   final AlertRule rule;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
   final ValueChanged<bool> onToggle;
 
-  const _RuleCard({required this.rule, required this.onEdit, required this.onDelete, required this.onToggle});
+  const _RuleCard({required this.rule, required this.onEdit, required this.onToggle});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -421,17 +388,15 @@ class _RuleCard extends StatelessWidget {
             _Tag(label: '${rule.conditionOperator} ${rule.conditionValue} ${rule.conditionUnit}', color: AppColors.textSecondary),
             const Spacer(),
             IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: onEdit, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
-            const SizedBox(width: 8),
-            IconButton(icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.severityCritical), onPressed: onDelete, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
           ],
         ),
         if (rule.notificationEmail || rule.notificationPush || rule.notificationSms) ...[
           const SizedBox(height: 6),
           Row(
             children: [
-              if (rule.notificationEmail) _NotifIcon(icon: Icons.email_outlined),
-              if (rule.notificationPush) _NotifIcon(icon: Icons.notifications_outlined),
-              if (rule.notificationSms) _NotifIcon(icon: Icons.sms_outlined),
+              if (rule.notificationEmail) const _NotifIcon(icon: Icons.email_outlined),
+              if (rule.notificationPush) const _NotifIcon(icon: Icons.notifications_outlined),
+              if (rule.notificationSms) const _NotifIcon(icon: Icons.sms_outlined),
             ],
           ),
         ],

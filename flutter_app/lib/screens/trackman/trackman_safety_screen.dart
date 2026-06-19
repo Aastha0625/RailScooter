@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class TrackmanSafetyScreen extends StatefulWidget {
   const TrackmanSafetyScreen({super.key});
@@ -23,11 +24,7 @@ class _TrackmanSafetyScreenState extends State<TrackmanSafetyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Safety Guidelines'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-      ),
+      appBar: const CustomAppBar(title: 'Safety Guidelines'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(

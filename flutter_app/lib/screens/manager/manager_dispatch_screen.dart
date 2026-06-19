@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class ManagerDispatchScreen extends StatefulWidget {
   const ManagerDispatchScreen({super.key});
@@ -84,22 +85,7 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Fleet Dispatch', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: const CustomAppBar(title: 'Fleet Dispatch'),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : _activeDispatches.isEmpty
@@ -122,15 +108,15 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.directions_car_filled_outlined, size: 64, color: AppColors.textLight),
-          const SizedBox(height: 16),
-          const Text('No Active Dispatches', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          const Text('All vehicles are currently idle.', style: TextStyle(color: AppColors.textSecondary)),
+          SizedBox(height: 16),
+          Text('No Active Dispatches', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          SizedBox(height: 8),
+          Text('All vehicles are currently idle.', style: TextStyle(color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -317,7 +303,7 @@ class _NewDispatchDialogState extends State<_NewDispatchDialog> {
                   const Text('Select Trackman', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedTrackmanId,
+                    initialValue: _selectedTrackmanId,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
@@ -332,7 +318,7 @@ class _NewDispatchDialogState extends State<_NewDispatchDialog> {
                   const Text('Select Vehicle', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedVehicleId,
+                    initialValue: _selectedVehicleId,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
