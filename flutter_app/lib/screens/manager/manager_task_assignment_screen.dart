@@ -6,6 +6,9 @@ import '../../models/user.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../constants/app_constants.dart';
+import '../../widgets/map_selection_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ManagerTaskAssignmentScreen extends StatefulWidget {
   const ManagerTaskAssignmentScreen({super.key});
@@ -19,7 +22,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
 
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _locationCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController(); // For the specific map coordinates/string
 
   List<AppUser> _trackmen = [];
   List<Vehicle> _vehicles = [];
@@ -32,6 +35,11 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
   String _priority = 'High';
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+
+  String? _selectedZone;
+  String? _selectedDivision;
+  String? _selectedRegion;
+  LatLng? _selectedLatLng;
 
   AppUser? _currentManager;
 
@@ -61,6 +69,9 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
       if (mounted) {
         setState(() {
           _currentManager = manager;
+          _selectedZone = manager?.zone;
+          _selectedDivision = manager?.division;
+          
           _trackmen = results[0] as List<AppUser>;
           _vehicles = results[1] as List<Vehicle>;
           _assignments = results[2] as List<Map<String, dynamic>>;
@@ -126,11 +137,9 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
         'scheduled_time': scheduledTime.toUtc().toIso8601String(),
         'status': 'Assigned',
         'assigned_by': Supabase.instance.client.auth.currentUser?.id,
-        'zone': _currentManager?.zone,
-        'division': _currentManager?.division,
-        'region': (_selectedTrackman?.regions != null && _selectedTrackman!.regions!.isNotEmpty) 
-            ? _selectedTrackman!.regions!.first 
-            : null,
+        'zone': _selectedZone,
+        'division': _selectedDivision,
+        'region': _selectedRegion,
       };
 
       try {
@@ -208,6 +217,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
     
     final position = await Geolocator.getCurrentPosition();
     setState(() {
+      _selectedLatLng = LatLng(position.latitude, position.longitude);
       _locationCtrl.text = '${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}';
     });
   }
@@ -254,18 +264,130 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
                   _buildTextField(_titleCtrl, 'Task Title', Icons.title, 'Enter a clear task title'),
                   const SizedBox(height: 16),
                   _buildTextField(_descCtrl, 'Description', Icons.description, 'Describe the task requirements...', maxLines: 3),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    _locationCtrl, 
-                    'Location', 
-                    Icons.location_on, 
-                    'e.g. Northern Sector B',
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.my_location, color: AppColors.accent),
-                      onPressed: _fetchLiveLocation,
-                      tooltip: 'Get Live GPS',
-                    ),
+                  const Text('Location', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  
+                  // Zone Dropdown
+                  _buildDropdown<String>(
+                    value: _selectedZone,
+                    hint: 'Select Zone',
+                    icon: Icons.map,
+                    items: AppConstants.zones.map((z) => DropdownMenuItem(value: z, child: Text(z))).toList(),
+                    onChanged: (v) {
+                      setState(() {
+                        _selectedZone = v;
+                        _selectedDivision = AppConstants.zoneDivisions[v]?.first;
+                        _selectedRegion = AppConstants.divisionRegions[_selectedDivision]?.first;
+                      });
+                    },
                   ),
+                  const SizedBox(height: 12),
+                  
+                  // Division Dropdown
+                  if (_selectedZone != null && AppConstants.zoneDivisions[_selectedZone] != null)
+                    _buildDropdown<String>(
+                      value: _selectedDivision,
+                      hint: 'Select Division',
+                      icon: Icons.domain,
+                      items: AppConstants.zoneDivisions[_selectedZone]!.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                      onChanged: (v) {
+                        setState(() {
+                          _selectedDivision = v;
+                          _selectedRegion = AppConstants.divisionRegions[v]?.first;
+                        });
+                      },
+                    ),
+                  const SizedBox(height: 12),
+
+                  // Region Dropdown
+                  if (_selectedDivision != null && AppConstants.divisionRegions[_selectedDivision] != null)
+                    _buildDropdown<String>(
+                      value: _selectedRegion,
+                      hint: 'Select Region',
+                      icon: Icons.location_city,
+                      items: AppConstants.divisionRegions[_selectedDivision]!.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                      onChanged: (v) {
+                        setState(() => _selectedRegion = v);
+                      },
+                    ),
+                  const SizedBox(height: 16),
+
+                  // Exact Location Pinpoint & GPS
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final LatLng? result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MapSelectionScreen(initialLocation: _selectedLatLng),
+                              ),
+                            );
+                            if (result != null) {
+                              setState(() {
+                                _selectedLatLng = result;
+                                _locationCtrl.text = '${result.latitude.toStringAsFixed(5)}, ${result.longitude.toStringAsFixed(5)}';
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.map_outlined),
+                          label: const Text('Pinpoint on Map'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.accent,
+                            side: const BorderSide(color: AppColors.accent),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _fetchLiveLocation,
+                          icon: const Icon(Icons.my_location, color: Colors.white),
+                          label: const Text('Use Live GPS', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_locationCtrl.text.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.pin_drop, color: AppColors.accent, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Exact Coordinates: ${_locationCtrl.text}',
+                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red, size: 18),
+                            onPressed: () {
+                              setState(() {
+                                _locationCtrl.clear();
+                                _selectedLatLng = null;
+                              });
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
                   
                   const SizedBox(height: 32),
                   const Text('Assignment Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),

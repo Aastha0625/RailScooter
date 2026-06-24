@@ -80,4 +80,42 @@ class AppConstants {
     'restricted',
     'depot',
   ];
+
+  // ── Geographical Data ──────────────────────────────────────────────────────
+  static const List<String> zones = [
+    'North Western Railway',
+    'Northern Railway',
+    'Central Railway',
+    'Western Railway'
+  ];
+
+  static const Map<String, List<String>> zoneDivisions = {
+    'North Western Railway': ['Bikaner', 'Jaipur', 'Jodhpur', 'Ajmer'],
+    'Northern Railway': ['Delhi', 'Ambala', 'Firozpur', 'Lucknow', 'Moradabad'],
+    'Central Railway': ['Mumbai', 'Bhusawal', 'Pune', 'Solapur', 'Nagpur'],
+    'Western Railway': ['Mumbai Central', 'Vadodara', 'Ahmedabad', 'Ratlam', 'Rajkot', 'Bhavnagar'],
+  };
+
+  static const Map<String, List<String>> divisionRegions = {
+    'Bikaner': ['Bikaner City', 'Suratgarh', 'Hanumangarh', 'Churu', 'Rewari'],
+    'Jaipur': ['Jaipur City', 'Phulera', 'Bandikui', 'Sikar', 'Alwar'],
+    'Jodhpur': ['Jodhpur City', 'Pali Marwar', 'Marwar Junction', 'Barmer', 'Jaisalmer'],
+    'Ajmer': ['Ajmer City', 'Bhilwara', 'Udaipur', 'Abu Road', 'Marwar'],
+    'Delhi': ['New Delhi', 'Old Delhi', 'Hazrat Nizamuddin', 'Anand Vihar', 'Rohtak'],
+    'Ambala': ['Ambala Cantt', 'Chandigarh', 'Kalka', 'Saharanpur', 'Bathinda'],
+    'Firozpur': ['Firozpur Cantt', 'Ludhiana', 'Jalandhar', 'Amritsar', 'Jammu Tawi'],
+    'Lucknow': ['Lucknow Charbagh', 'Kanpur', 'Varanasi', 'Ayodhya', 'Bareilly'],
+    'Moradabad': ['Moradabad City', 'Haridwar', 'Dehradun', 'Roorkee', 'Shahjahanpur'],
+    'Mumbai': ['CSMT', 'Dadar', 'Kurla', 'Kalyan', 'Thane'],
+    'Bhusawal': ['Bhusawal City', 'Jalgaon', 'Nasik Road', 'Manmad', 'Khandwa'],
+    'Pune': ['Pune City', 'Shivajinagar', 'Miraj', 'Kolhapur', 'Daund'],
+    'Solapur': ['Solapur City', 'Gulbarga', 'Wadi', 'Daund', 'Kurduvadi'],
+    'Nagpur': ['Nagpur City', 'Wardha', 'Ballarshah', 'Amla', 'Betul'],
+    'Mumbai Central': ['Mumbai Central', 'Bandra Terminus', 'Borivali', 'Surat', 'Valsad'],
+    'Vadodara': ['Vadodara City', 'Anand', 'Nadiad', 'Godhra', 'Bharuch'],
+    'Ahmedabad': ['Ahmedabad City', 'Maninagar', 'Sabarmati', 'Viramgam', 'Mehsana'],
+    'Ratlam': ['Ratlam City', 'Ujjain', 'Indore', 'Dewas', 'Mhow'],
+    'Rajkot': ['Rajkot City', 'Surendranagar', 'Jamnagar', 'Okha', 'Dwarka'],
+    'Bhavnagar': ['Bhavnagar Terminus', 'Botad', 'Dhola', 'Porbandar', 'Veraval'],
+  };
 }
