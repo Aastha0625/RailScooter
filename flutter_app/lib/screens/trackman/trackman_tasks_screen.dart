@@ -27,10 +27,13 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
   Future<void> _loadTasks() async {
     setState(() => _loading = true);
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) throw Exception('Not logged in');
+      final user = await ApiService.fetchCurrentUserData();
+      if (user == null) throw Exception('Not logged in');
       
-      final tasks = await ApiService.fetchTasks(assignedToUserId: userId);
+      final tasks = await ApiService.fetchTasks(
+        assignedToUserId: user.id,
+        regions: user.regions,
+      );
       if (mounted) {
         setState(() {
           _tasks = tasks;

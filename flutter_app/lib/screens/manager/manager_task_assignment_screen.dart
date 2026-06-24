@@ -33,6 +33,8 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
+  AppUser? _currentManager;
+
   @override
   void initState() {
     super.initState();
@@ -49,15 +51,17 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
 
   Future<void> _loadData() async {
     try {
+      final manager = await ApiService.fetchCurrentUserData();
       final results = await Future.wait([
-        ApiService.fetchUsers(),
+        ApiService.fetchUsers(division: manager?.division, role: 'trackman'),
         ApiService.fetchVehicles(),
         ApiService.fetchAssignments(),
       ]);
       
       if (mounted) {
         setState(() {
-          _trackmen = (results[0] as List<AppUser>).where((u) => u.role == 'trackman').toList();
+          _currentManager = manager;
+          _trackmen = results[0] as List<AppUser>;
           _vehicles = results[1] as List<Vehicle>;
           _assignments = results[2] as List<Map<String, dynamic>>;
           _loading = false;
@@ -67,7 +71,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load data: \$e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed to load data: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -122,6 +126,11 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
         'scheduled_time': scheduledTime.toUtc().toIso8601String(),
         'status': 'Assigned',
         'assigned_by': Supabase.instance.client.auth.currentUser?.id,
+        'zone': _currentManager?.zone,
+        'division': _currentManager?.division,
+        'region': (_selectedTrackman?.regions != null && _selectedTrackman!.regions!.isNotEmpty) 
+            ? _selectedTrackman!.regions!.first 
+            : null,
       };
 
       try {

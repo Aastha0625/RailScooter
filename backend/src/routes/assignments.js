@@ -5,26 +5,25 @@ const { supabase } = require('../config/supabase');
 // GET active assignments
 router.get('/', async (req, res) => {
   try {
-    const { vehicle_id, department_id, user_id } = req.query;
+    const { vehicle_id, user_id } = req.query;
     let query = supabase
       .from('vehicle_assignments')
       .select(`
         *,
         vehicles(id, vehicle_id, variant, battery_type, status),
-        departments(id, name, code),
         app_users!vehicle_assignments_assigned_user_id_fkey(id, full_name, employee_id)
       `)
       .eq('is_active', true)
       .order('assigned_at', { ascending: false });
 
     if (vehicle_id) query = query.eq('vehicle_id', vehicle_id);
-    if (department_id) query = query.eq('department_id', department_id);
     if (user_id) query = query.eq('assigned_user_id', user_id);
 
     const { data, error } = await query;
     if (error) throw error;
     res.json(data);
   } catch (err) {
+    console.error("ASSIGNMENTS API ERROR:", err.stack || err.message || err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -32,7 +31,7 @@ router.get('/', async (req, res) => {
 // POST create assignment
 router.post('/', async (req, res) => {
   try {
-    const { vehicle_id, department_id, assigned_user_id, notes } = req.body;
+    const { vehicle_id, assigned_user_id, notes } = req.body;
     if (!vehicle_id) return res.status(400).json({ error: 'vehicle_id is required' });
 
     // Deactivate existing active assignments for this vehicle
@@ -44,11 +43,10 @@ router.post('/', async (req, res) => {
 
     const { data, error } = await supabase
       .from('vehicle_assignments')
-      .insert({ vehicle_id, department_id, assigned_user_id, notes, is_active: true })
+      .insert({ vehicle_id, assigned_user_id, notes, is_active: true })
       .select(`
         *,
         vehicles(id, vehicle_id, variant),
-        departments(id, name, code),
         app_users!vehicle_assignments_assigned_user_id_fkey(id, full_name)
       `)
       .single();

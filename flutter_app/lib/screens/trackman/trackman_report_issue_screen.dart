@@ -10,6 +10,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'map_picker_screen.dart';
 import 'trackman_base_screen.dart';
+import '../../services/api_service.dart';
 
 class TrackmanReportIssueScreen extends StatefulWidget {
   const TrackmanReportIssueScreen({super.key});
@@ -140,6 +141,8 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
             .getPublicUrl(filePath);
       }
 
+      final trackmanData = await ApiService.fetchCurrentUserData();
+
       await Supabase.instance.client.from('trackman_issues').insert({
         'reporter_id': user.id,
         'vehicle_id': activeAssignment?['vehicle_id'],
@@ -150,6 +153,11 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
         'location_lat': _issueLocation!.latitude,
         'location_lng': _issueLocation!.longitude,
         'image_url': imageUrl,
+        'zone': trackmanData?.zone,
+        'division': trackmanData?.division,
+        'region': (trackmanData?.regions != null && trackmanData!.regions!.isNotEmpty) 
+            ? trackmanData.regions!.first 
+            : null,
       });
 
       if (mounted) {

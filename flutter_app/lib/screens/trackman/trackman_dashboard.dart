@@ -11,6 +11,7 @@ import 'trackman_tasks_screen.dart';
 import 'trackman_notifications_screen.dart';
 import 'trackman_base_screen.dart';
 import '../../services/api_service.dart';
+import '../../models/user.dart';
 
 class TrackmanDashboardScreen extends StatefulWidget {
   const TrackmanDashboardScreen({super.key});
@@ -24,12 +25,21 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
   bool _loading = true;
   bool hasNotifications = false;
   Map<String, dynamic>? _activeAssignment;
+  AppUser? _trackmanUser;
 
   @override
   void initState() {
     super.initState();
+    _fetchUserData();
     _checkNotifications();
     _fetchActiveVehicle();
+  }
+
+  Future<void> _fetchUserData() async {
+    final user = await ApiService.fetchCurrentUserData();
+    if (mounted) {
+      setState(() => _trackmanUser = user);
+    }
   }
 
   Future<void> _fetchActiveVehicle() async {
@@ -103,9 +113,13 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
       final client = Supabase.instance.client;
       final prefs = await SharedPreferences.getInstance();
       final lastReadStr = prefs.getString('last_notification_read_time');
-      final lastRead = lastReadStr != null
-          ? DateTime.parse(lastReadStr)
-          : DateTime.fromMillisecondsSinceEpoch(0);
+      DateTime lastRead;
+      if (lastReadStr != null) {
+        lastRead = DateTime.parse(lastReadStr);
+      } else {
+        lastRead = DateTime.now();
+        await prefs.setString('last_notification_read_time', lastRead.toIso8601String());
+      }
 
       final broadcastsResponse = await client
           .from('broadcast_messages')
@@ -139,6 +153,7 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             _buildActiveVehicleHero(),
             const SizedBox(height: 16),
             _buildAnalyticsTitle('Quick Actions'),
@@ -420,21 +435,49 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
           children: [
             const Icon(Icons.location_on, color: AppColors.accent, size: 40),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Current Zone',
+                  const Text('Current Location',
                       style: TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500)),
-                  SizedBox(height: 4),
-                  Text('Main Station Zone',
-                      style: TextStyle(
-                          fontSize: 18,
+                  const SizedBox(height: 4),
+                  if (_trackmanUser != null && (_trackmanUser!.regions?.isNotEmpty == true || _trackmanUser!.division != null))
+                    Text(
+                      [
+                        if (_trackmanUser!.regions?.isNotEmpty == true) _trackmanUser!.regions!.join(', '),
+                        if (_trackmanUser!.division != null) _trackmanUser!.division,
+                      ].join(' • '),
+                      style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary)),
+                          color: AppColors.textPrimary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else
+                    const Text('Main Station',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary)),
+                            
+                  if (_trackmanUser?.zone != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        _trackmanUser!.zone!,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -485,8 +528,9 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
         ),
         child: FutureBuilder<List<Map<String, dynamic>>>(
           future: ApiService.fetchTasks(
-              assignedToUserId:
-                  Supabase.instance.client.auth.currentUser?.id),
+              assignedToUserId: Supabase.instance.client.auth.currentUser?.id,
+              regions: _trackmanUser?.regions,
+          ),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());

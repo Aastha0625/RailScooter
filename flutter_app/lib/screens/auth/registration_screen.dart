@@ -220,7 +220,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 children: [
-                  const SizedBox(height: 10),
                   _buildHeader(),
                   const SizedBox(height: 30),
                   _buildGlassmorphicCard(),
@@ -236,27 +235,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-        Center(
-          child: Transform.scale(
-            scale: 3.2,
-            child: Image.asset(
-              'assets/images/logo.png',
-              height: 60,
-              fit: BoxFit.fitHeight,
-            ),
-          ),
-        ),
-        const SizedBox(height: 32),
         const Text(
           'Registration',
           style: TextStyle(
             color: Color(0xFFE2E8F0),
-            fontSize: 32,
+            fontSize: 24,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         // Progress Bar
         Row(
           children: [
@@ -277,7 +265,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(24),
@@ -340,10 +328,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: const BorderSide(color: Colors.white30),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('Previous', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: const Text('Previous', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   if (_currentStep > 1) const SizedBox(width: 12),
@@ -354,7 +342,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: glowColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
@@ -362,7 +350,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                           : Text(
                               _currentStep == 2 ? 'Register' : 'Next',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF431407)),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF431407)),
                             ),
                     ),
                   ),
@@ -389,10 +377,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 child: const Text('1', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 8),
-              const Text('Personal Details', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Personal Details', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(child: _buildInput('First Name *', _firstNameCtrl)),
@@ -407,8 +395,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           const SizedBox(height: 16),
           _buildInput('Password *', _passwordCtrl, isPassword: true),
           const SizedBox(height: 16),
-          const Text('Gender *', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 6),
+          const Text('Gender *', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 4),
           _buildDropdown(_gender, ['Male', 'Female', 'Other'], (v) => setState(() => _gender = v!)),
         ],
       ),
@@ -429,18 +417,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 child: const Text('2', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 8),
-              const Text('Work Details', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Work Details', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 24),
-          
-          const Text('Job Role *', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 6),
-          _buildDropdown(_jobRole, _roles, (v) => setState(() => _jobRole = v!)),
           const SizedBox(height: 16),
+          
+          const Text('Job Role *', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 4),
+          _buildDropdown(_jobRole, _roles, (v) => setState(() => _jobRole = v!)),
+          const SizedBox(height: 12),
 
-          const Text('Zone *', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 6),
+          const Text('Zone *', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 4),
           _buildDropdown(_zone, _zones, (v) {
             setState(() {
               _zone = v!;
@@ -448,25 +436,25 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               _selectedRegions.clear();
             });
           }),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          const Text('Division *', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 6),
+          const Text('Division *', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 4),
           _buildDropdown(_division, _currentDivisions, (v) {
             setState(() {
               _division = v!;
               _selectedRegions.clear();
             });
           }),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          const Text('Region *', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 6),
+          const Text('Region *', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 4),
           GestureDetector(
             onTap: _showRegionModal,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
@@ -474,11 +462,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
               child: Text(
                 _selectedRegions.isEmpty ? 'Select region' : _selectedRegions.join(', '),
-                style: TextStyle(color: _selectedRegions.isEmpty ? Colors.white54 : Colors.white, fontSize: 15),
+                style: TextStyle(color: _selectedRegions.isEmpty ? Colors.white54 : Colors.white, fontSize: 14),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           _buildInput('Employee ID Number', _empIdCtrl),
         ],
@@ -491,16 +479,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-        const SizedBox(height: 6),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        const SizedBox(height: 4),
         TextFormField(
           controller: controller,
           obscureText: isPassword,
           keyboardType: isEmail ? TextInputType.emailAddress : (isNumber ? TextInputType.phone : TextInputType.text),
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             prefixText: prefix,
-            prefixStyle: const TextStyle(color: Colors.white70, fontSize: 15),
+            prefixStyle: const TextStyle(color: Colors.white70, fontSize: 14),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(
@@ -530,7 +519,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Widget _buildDropdown(String value, List<String> items, ValueChanged<String?> onChanged) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
@@ -540,7 +529,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         child: DropdownButton<String>(
           value: value,
           dropdownColor: bgColor,
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white54),
           isExpanded: true,
           items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),

@@ -149,10 +149,13 @@ class ApiService {
 
 
 
-  static Future<List<AppUser>> fetchUsers() async {
-    return _list(await _request('GET', '/users'))
-        .map((json) => AppUser.fromJson(_map(json)))
-        .toList();
+  static Future<List<AppUser>> fetchUsers({String? division, String? zone, String? role}) async {
+    var query = _sb.from('app_users').select('*');
+    if (division != null) query = query.eq('division', division);
+    if (zone != null) query = query.eq('zone', zone);
+    if (role != null) query = query.eq('role', role);
+    final data = await query.order('created_at', ascending: false);
+    return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
   }
 
   static Future<List<AppUser>> fetchAllUsersAdmin() async {
@@ -197,6 +200,12 @@ class ApiService {
     await _sb.from('app_users').update({'is_active': true}).eq('id', userId);
   }
 
+  /// Delete a user permanently (Admin only)
+  static Future<void> deleteUser(String userId) async {
+    // Calls a Supabase RPC to delete the user from auth.users (which cascades to app_users)
+    await _sb.rpc('delete_user_by_admin', params: {'target_user_id': userId});
+  }
+
   /// Fetch the current logged-in user's role
   static Future<String?> fetchCurrentUserRole() async {
     final uid = _sb.auth.currentUser?.id;
@@ -207,6 +216,19 @@ class ApiService {
         .eq('id', uid)
         .maybeSingle();
     return data?['role'] as String?;
+  }
+
+  /// Fetch the current logged-in user's full data
+  static Future<AppUser?> fetchCurrentUserData() async {
+    final uid = _sb.auth.currentUser?.id;
+    if (uid == null) return null;
+    final data = await _sb
+        .from('app_users')
+        .select('*')
+        .eq('id', uid)
+        .maybeSingle();
+    if (data == null) return null;
+    return AppUser.fromJson(data);
   }
 
   /// Fetch count of all users (admin)
@@ -441,10 +463,24 @@ class ApiService {
 
   // -------- TRACKMAN TASKS --------
 
-  static Future<List<Map<String, dynamic>>> fetchTasks({String? assignedToUserId}) async {
+  static Future<List<Map<String, dynamic>>> fetchTasks({
+    String? assignedToUserId,
+    List<String>? regions,
+    String? division,
+    String? zone,
+  }) async {
     var query = _sb.from('trackman_tasks').select('*, app_users(full_name), vehicles(vehicle_id, variant)');
     if (assignedToUserId != null) {
       query = query.eq('assigned_to', assignedToUserId);
+    }
+    if (regions != null && regions.isNotEmpty) {
+      query = query.inFilter('region', regions);
+    }
+    if (division != null) {
+      query = query.eq('division', division);
+    }
+    if (zone != null) {
+      query = query.eq('zone', zone);
     }
     final data = await query.order('created_at', ascending: false);
     return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
