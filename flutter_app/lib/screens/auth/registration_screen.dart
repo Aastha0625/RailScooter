@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -485,8 +486,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           controller: controller,
           obscureText: isPassword,
           keyboardType: isEmail ? TextInputType.emailAddress : (isNumber ? TextInputType.phone : TextInputType.text),
+          maxLength: isNumber ? 10 : null,
+          inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
+            counterText: '',
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             prefixText: prefix,
             prefixStyle: const TextStyle(color: Colors.white70, fontSize: 14),
@@ -507,8 +511,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             errorStyle: const TextStyle(color: Colors.redAccent),
           ),
           validator: (v) {
-            if (label.contains('*') && (v == null || v.isEmpty)) return 'Required';
-            if (isEmail && v != null && !v.contains('@')) return 'Invalid email';
+            if (label.contains('*') && (v == null || v.trim().isEmpty)) return 'Required';
+            if (isEmail && v != null && v.trim().isNotEmpty) {
+              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+              if (!emailRegex.hasMatch(v.trim())) return 'Invalid email address';
+            }
+            if (isNumber && v != null && v.trim().isNotEmpty) {
+              if (v.trim().length != 10) return 'Must be exactly 10 digits';
+            }
             return null;
           },
         ),
