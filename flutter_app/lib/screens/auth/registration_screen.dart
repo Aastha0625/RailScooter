@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../constants/app_constants.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -37,21 +38,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final Color glowColor = const Color(0xFFF97316);
 
   final List<String> _roles = ['Admin', 'Manager', 'Trackman'];
-  final List<String> _zones = ['North Western Railway', 'Northern Railway', 'Central Railway', 'Western Railway'];
+  List<String> get _zones => AppConstants.zones;
   
-  final Map<String, List<String>> _zoneDivisions = {
-    'North Western Railway': ['Bikaner', 'Jaipur', 'Jodhpur', 'Ajmer'],
-    'Northern Railway': ['Delhi', 'Ambala', 'Firozpur', 'Lucknow', 'Moradabad'],
-    'Central Railway': ['Mumbai', 'Bhusawal', 'Pune', 'Solapur', 'Nagpur'],
-    'Western Railway': ['Mumbai Central', 'Vadodara', 'Ahmedabad', 'Ratlam', 'Rajkot', 'Bhavnagar'],
-  };
-
-  final Map<String, List<String>> _divisionRegions = {
-    'Bikaner': ['Bikaner City', 'Suratgarh', 'Hanumangarh', 'Churu', 'Rewari'],
-    'Jaipur': ['Jaipur City', 'Phulera', 'Bandikui', 'Sikar', 'Alwar'],
-    'Jodhpur': ['Jodhpur City', 'Pali Marwar', 'Jaisalmer', 'Barmer', 'Merta Road'],
-    'Ajmer': ['Ajmer City', 'Bhilwara', 'Udaipur', 'Abu Road', 'Marwar Junction'],
-  };
+  Map<String, List<String>> get _zoneDivisions => AppConstants.zoneDivisions;
+  Map<String, List<String>> get _divisionRegions => AppConstants.divisionRegions;
 
   List<String> get _currentDivisions => _zoneDivisions[_zone] ?? ['General Division'];
   List<String> get _currentRegions => _divisionRegions[_division] ?? ['Region 1', 'Region 2', 'Region 3'];

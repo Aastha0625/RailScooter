@@ -67,10 +67,13 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('User Assignment')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAssignUserToVehicle,
-        backgroundColor: AppColors.accent,
-        child: const Icon(Icons.person_add, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 24.0),
+        child: FloatingActionButton(
+          onPressed: _showAssignUserToVehicle,
+          backgroundColor: AppColors.accent,
+          child: const Icon(Icons.person_add, color: Colors.white),
+        ),
       ),
       body: Column(
         children: [

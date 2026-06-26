@@ -48,7 +48,9 @@ class ResponsiveScaffold extends StatelessWidget {
               child: Scaffold(
                 appBar: appBar,
                 body: body,
-                floatingActionButton: floatingActionButton,
+                floatingActionButton: floatingActionButton != null 
+                    ? Padding(padding: const EdgeInsets.only(bottom: 24.0), child: floatingActionButton) 
+                    : null,
                 backgroundColor: AppColors.background,
               ),
             ),
@@ -64,7 +66,9 @@ class ResponsiveScaffold extends StatelessWidget {
           child: sidebar,
         ),
         body: body,
-        floatingActionButton: floatingActionButton,
+        floatingActionButton: floatingActionButton != null 
+            ? Padding(padding: const EdgeInsets.only(bottom: 24.0), child: floatingActionButton) 
+            : null,
       );
     }
   }

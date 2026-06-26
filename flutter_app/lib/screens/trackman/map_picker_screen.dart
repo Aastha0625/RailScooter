@@ -106,15 +106,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        onPressed: () {
-          // Centre back to the currently selected point
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLngZoom(_selectedLocation, 15.0),
-          );
-        },
-        child: const Icon(Icons.my_location, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 24.0),
+        child: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          onPressed: () {
+            // Centre back to the currently selected point
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLngZoom(_selectedLocation, 15.0),
+            );
+          },
+          child: const Icon(Icons.my_location, color: Colors.white),
+        ),
       ),
     );
   }
