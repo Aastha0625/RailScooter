@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../theme/app_theme.dart';
 
@@ -13,7 +14,7 @@ class MapSelectionScreen extends StatefulWidget {
 }
 
 class _MapSelectionScreenState extends State<MapSelectionScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   LatLng? _selectedLocation;
   bool _isLoading = true;
 
@@ -58,13 +59,9 @@ class _MapSelectionScreenState extends State<MapSelectionScreen> {
       _isLoading = false;
     });
     
-    if (_mapController != null && _selectedLocation != null) {
-      _mapController!.animateCamera(CameraUpdate.newLatLngZoom(_selectedLocation!, 15));
+    if (_selectedLocation != null) {
+      _mapController.move(_selectedLocation!, 15);
     }
-  }
-
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
   }
 
   void _onTap(LatLng position) {
@@ -75,10 +72,8 @@ class _MapSelectionScreenState extends State<MapSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final initialCameraPosition = CameraPosition(
-      target: _selectedLocation ?? const LatLng(20.5937, 78.9629), // Default to India center
-      zoom: _selectedLocation != null ? 15.0 : 5.0,
-    );
+    final initialCenter = _selectedLocation ?? const LatLng(20.5937, 78.9629); // Default to India center
+    final initialZoom = _selectedLocation != null ? 15.0 : 5.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -100,21 +95,34 @@ class _MapSelectionScreenState extends State<MapSelectionScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
-                GoogleMap(
-                  onMapCreated: _onMapCreated,
-                  initialCameraPosition: initialCameraPosition,
-                  onTap: _onTap,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: true,
-                  markers: _selectedLocation == null
-                      ? {}
-                      : {
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: initialCenter,
+                    initialZoom: initialZoom,
+                    onTap: (tapPosition, point) => _onTap(point),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.piscoot.app',
+                    ),
+                    if (_selectedLocation != null)
+                      MarkerLayer(
+                        markers: [
                           Marker(
-                            markerId: const MarkerId('selected'),
-                            position: _selectedLocation!,
-                            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                            point: _selectedLocation!,
+                            width: 40,
+                            height: 40,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                              size: 40,
+                            ),
                           ),
-                        },
+                        ],
+                      ),
+                  ],
                 ),
                 if (_selectedLocation != null)
                   Positioned(

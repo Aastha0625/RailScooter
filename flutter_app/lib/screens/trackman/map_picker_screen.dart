@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
 
 class MapPickerScreen extends StatefulWidget {
@@ -16,18 +17,12 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   late LatLng _selectedLocation;
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
     super.initState();
     _selectedLocation = widget.initialLocation;
-  }
-
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
   }
 
   @override
@@ -52,30 +47,37 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       ),
       body: Stack(
         children: [
-          GoogleMap(
-            onMapCreated: (controller) => _mapController = controller,
-            initialCameraPosition: CameraPosition(
-              target: _selectedLocation,
-              zoom: 15.0,
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _selectedLocation,
+              initialZoom: 15.0,
+              onTap: (tapPosition, point) {
+                setState(() {
+                  _selectedLocation = point;
+                });
+              },
             ),
-            // Tap on map to place marker
-            onTap: (LatLng point) {
-              setState(() {
-                _selectedLocation = point;
-              });
-            },
-            markers: {
-              Marker(
-                markerId: const MarkerId('selected'),
-                position: _selectedLocation,
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueRed,
-                ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.piscoot.app',
               ),
-            },
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: true,
-            mapToolbarEnabled: false,
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _selectedLocation,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           Positioned(
             top: 16,
@@ -111,10 +113,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         child: FloatingActionButton(
           backgroundColor: AppColors.primary,
           onPressed: () {
-            // Centre back to the currently selected point
-            _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(_selectedLocation, 15.0),
-            );
+            _mapController.move(_selectedLocation, 15.0);
           },
           child: const Icon(Icons.my_location, color: Colors.white),
         ),

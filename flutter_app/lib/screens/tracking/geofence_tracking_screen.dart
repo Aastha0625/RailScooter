@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../theme/app_theme.dart';
@@ -27,7 +28,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
   List<Geofence> _geofences = [];
   List<VehicleLocation> _liveLocations = [];
   bool _loading = true;
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   Timer? _pollingTimer;
   LatLng? _userLocation;
 
@@ -61,9 +62,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
       if (mounted) setState(() => _userLocation = latlng);
 
       // If the map is already created, jump to the user's position
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(latlng, 14),
-      );
+      _mapController.move(latlng, 14);
     } catch (e) {
       debugPrint('Could not get user location: $e');
     }
@@ -72,9 +71,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
   /// Re-centres the camera on the user's live GPS position.
   Future<void> _goToMyLocation() async {
     if (_userLocation != null) {
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(_userLocation!, 15),
-      );
+      _mapController.move(_userLocation!, 15);
     } else {
       await _fetchUserLocation();
     }
@@ -85,7 +82,6 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
     _pollingTimer?.cancel();
     _tabs.removeListener(_handleTabChange);
     _tabs.dispose();
-    _mapController?.dispose();
     super.dispose();
   }
 
@@ -103,10 +99,30 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
 
   Future<void> _pollSilent() async {
     try {
-      final locations = await ApiService.fetchLiveTracking();
+      final rawLocations = await ApiService.fetchLiveTracking();
+      final routingService = RailwayRoutingService();
+      final snappedLocations = <VehicleLocation>[];
+      for (final loc in rawLocations) {
+        final snapped = await routingService.snapToTrack(
+            LatLng(loc.latitude, loc.longitude));
+        if (snapped != null) {
+          snappedLocations.add(VehicleLocation(
+            vehicleId: loc.vehicleId,
+            vehicleLabel: loc.vehicleLabel,
+            latitude: snapped.latitude,
+            longitude: snapped.longitude,
+            speedKmh: loc.speedKmh,
+            batteryPercent: loc.batteryPercent,
+            isOnline: loc.isOnline,
+            recordedAt: loc.recordedAt,
+          ));
+        } else {
+          snappedLocations.add(loc);
+        }
+      }
       if (mounted) {
         setState(() {
-          _liveLocations = locations;
+          _liveLocations = snappedLocations;
         });
       }
     } catch (e) {
@@ -166,39 +182,38 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
     }
   }
 
-  // Build Google Maps markers from live vehicle locations
-  Set<Marker> _buildMarkers() {
+  // Build markers from live vehicle locations
+  List<Marker> _buildMarkers() {
     return _liveLocations.map((loc) {
       return Marker(
-        markerId: MarkerId(loc.vehicleId),
-        position: LatLng(loc.latitude, loc.longitude),
-        infoWindow: InfoWindow(
-          title: loc.vehicleLabel,
-          snippet:
-              '${loc.speedKmh.toStringAsFixed(1)} km/h · Battery ${loc.batteryPercent}%',
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          loc.isOnline
-              ? BitmapDescriptor.hueGreen
-              : BitmapDescriptor.hueRed,
+        point: LatLng(loc.latitude, loc.longitude),
+        width: 40,
+        height: 40,
+        child: Tooltip(
+          message: '${loc.vehicleLabel}\n${loc.speedKmh.toStringAsFixed(1)} km/h · Battery ${loc.batteryPercent}%',
+          child: Icon(
+            Icons.location_on,
+            color: loc.isOnline ? Colors.green : Colors.red,
+            size: 32,
+          ),
         ),
       );
-    }).toSet();
+    }).toList();
   }
 
-  // Build Google Maps circles from active geofences
-  Set<Circle> _buildCircles() {
+  // Build circles from active geofences
+  List<CircleMarker> _buildCircles() {
     return _geofences.where((g) => g.isActive).map((g) {
       final color = _hexToColor(g.colorHex);
-      return Circle(
-        circleId: CircleId(g.id),
-        center: LatLng(g.centerLat, g.centerLng),
+      return CircleMarker(
+        point: LatLng(g.centerLat, g.centerLng),
         radius: g.radiusMeters,
-        fillColor: color.withValues(alpha: 0.15),
-        strokeColor: color,
-        strokeWidth: 2,
+        useRadiusInMeter: true,
+        color: color.withValues(alpha: 0.15),
+        borderColor: color,
+        borderStrokeWidth: 2,
       );
-    }).toSet();
+    }).toList();
   }
 
   @override
@@ -263,27 +278,24 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
       children: [
         _buildLiveStats(),
         Expanded(
-          child: GoogleMap(
-            onMapCreated: (controller) {
-              _mapController = controller;
-              // Jump to real GPS as soon as the map is ready
-              if (_userLocation != null) {
-                controller.animateCamera(
-                  CameraUpdate.newLatLngZoom(_userLocation!, 15),
-                );
-              }
-            },
-            initialCameraPosition: CameraPosition(
-              target: initialPosition,
-              zoom: 14,
+          child: FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: initialPosition,
+              initialZoom: 14,
             ),
-            markers: _buildMarkers(),
-            circles: _buildCircles(),
-            myLocationButtonEnabled: true,
-            myLocationEnabled: true,
-            mapToolbarEnabled: false,
-            compassEnabled: true,
-            zoomControlsEnabled: true,
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.piscoot.app',
+              ),
+              CircleLayer(
+                circles: _buildCircles(),
+              ),
+              MarkerLayer(
+                markers: _buildMarkers(),
+              ),
+            ],
           ),
         ),
         if (_liveLocations.isNotEmpty) _buildVehicleBottomSheet(),
@@ -355,10 +367,8 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
           final loc = _liveLocations[i];
           return GestureDetector(
             onTap: () {
-              _mapController?.animateCamera(
-                CameraUpdate.newLatLngZoom(
-                    LatLng(loc.latitude, loc.longitude), 16),
-              );
+              _mapController.move(
+                  LatLng(loc.latitude, loc.longitude), 16);
             },
             child: Container(
               width: 130,
@@ -429,11 +439,9 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
           onViewOnMap: () {
             _tabs.animateTo(0);
             Future.delayed(const Duration(milliseconds: 300), () {
-              _mapController?.animateCamera(
-                CameraUpdate.newLatLngZoom(
-                    LatLng(_geofences[i].centerLat, _geofences[i].centerLng),
-                    15),
-              );
+              _mapController.move(
+                  LatLng(_geofences[i].centerLat, _geofences[i].centerLng),
+                  15);
             });
           },
         ),

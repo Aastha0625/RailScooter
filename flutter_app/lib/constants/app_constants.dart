@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 /// Central place for all app-wide constants.
 /// Update these when deploying to production.
@@ -17,10 +16,7 @@ class AppConstants {
   static String get backendHttpUrl {
     const configured = String.fromEnvironment('BACKEND_HTTP_URL');
     if (configured.isNotEmpty) return configured;
-    if (kIsWeb) return 'http://localhost:3000';
-    return defaultTargetPlatform == TargetPlatform.android
-        ? 'http://10.0.2.2:3000'
-        : 'http://localhost:3000';
+    return 'https://railscooter-backend.onrender.com';
   }
 
   static String get backendWsUrl {

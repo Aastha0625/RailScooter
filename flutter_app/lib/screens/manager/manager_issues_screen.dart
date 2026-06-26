@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
 import '../../services/railway_routing_service.dart';
 import '../../widgets/custom_app_bar.dart';
@@ -243,7 +244,7 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
   }
 }
 
-// ─── Issue mini-map with Google Maps + route polyline ────────────────────────
+// ─── Issue mini-map with flutter_map + route polyline ────────────────────────
 
 class _IssueMapWidget extends StatefulWidget {
   final double lat;
@@ -258,7 +259,7 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
   bool _loadingRoute = true;
   RailwayRouteResult? _routeResult;
   String? _errorMessage;
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
 
   late LatLng _artLocation;
   late LatLng _incidentLocation;
@@ -272,19 +273,13 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
     _fetchRoute();
   }
 
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
-  }
-
   Future<void> _fetchRoute() async {
     final service = RailwayRoutingService();
     final result = await service.getRoute(_artLocation, _incidentLocation);
     if (mounted) {
       setState(() {
         _loadingRoute = false;
-        if (result != null) {
+        if (result != null && result.points.isNotEmpty) {
           _routeResult = result;
         } else {
           _errorMessage = 'Could not calculate railway route.';
@@ -293,54 +288,76 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
     }
   }
 
-  Set<Marker> get _markers {
-    final markers = <Marker>{
-      Marker(
-        markerId: const MarkerId('incident'),
-        position: _routeResult?.snappedEnd ?? _incidentLocation,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      ),
-    };
-    if (_routeResult != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('train'),
-        position: _routeResult!.snappedStart,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      ));
-    }
-    return markers;
-  }
-
-  Set<Polyline> get _polylines {
-    if (_routeResult == null) return {};
-    return {
-      Polyline(
-        polylineId: const PolylineId('route'),
-        points: _routeResult!.points,
-        width: 4,
-        color: Colors.blueAccent,
-      ),
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final center = _routeResult?.snappedEnd ?? _incidentLocation;
 
     return Stack(
       children: [
-        GoogleMap(
-          onMapCreated: (c) => _mapController = c,
-          initialCameraPosition: CameraPosition(target: center, zoom: 13.0),
-          markers: _markers,
-          polylines: _polylines,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          scrollGesturesEnabled: false,
-          zoomGesturesEnabled: false,
-          rotateGesturesEnabled: false,
-          tiltGesturesEnabled: false,
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: center,
+            initialZoom: 12.0,
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.piscoot.app',
+            ),
+            if (_routeResult != null) ...[
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: _routeResult!.points,
+                    color: Colors.blueAccent,
+                    strokeWidth: 4.0,
+                  ),
+                ],
+              ),
+              MarkerLayer(
+                markers: [
+                  // Incident marker (Red)
+                  Marker(
+                    point: _routeResult!.snappedEnd,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                  // ART train marker (Blue)
+                  Marker(
+                    point: _routeResult!.snappedStart,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.train,
+                      color: Colors.blue,
+                      size: 36,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _incidentLocation,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
         if (_loadingRoute)
           const Center(child: CircularProgressIndicator())
