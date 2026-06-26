@@ -94,7 +94,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
       _selectedVehicle = null;
       if (user != null) {
         // Find if this trackman already has an assigned vehicle
-        final activeAssignment = _assignments.where((a) => a['assigned_user_id'] == user.id && a['unassigned_at'] == null).firstOrNull;
+        final activeAssignment = _assignments.where((a) => a['assigned_user_id'] == user.id && a['is_active'] == true).firstOrNull;
         if (activeAssignment != null) {
           final vid = activeAssignment['vehicle_id'];
           _selectedVehicle = _vehicles.where((v) => v.id == vid).firstOrNull;
@@ -154,7 +154,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
       }
 
       // We should check if we need to create a new vehicle assignment
-      final hasActiveAssignment = _assignments.any((a) => a['assigned_user_id'] == _selectedTrackman!.id && a['vehicle_id'] == _selectedVehicle!.id && a['unassigned_at'] == null);
+      final hasActiveAssignment = _assignments.any((a) => a['assigned_user_id'] == _selectedTrackman!.id && a['vehicle_id'] == _selectedVehicle!.id && a['is_active'] == true);
       
       if (!hasActiveAssignment) {
         // If the vehicle isn't currently assigned to them, we do it now.
@@ -408,7 +408,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
                     icon: Icons.electric_scooter,
                     items: _vehicles.map((v) {
                       // Optionally indicate if it's the already assigned one
-                      bool isAssigned = _assignments.any((a) => a['assigned_user_id'] == _selectedTrackman?.id && a['vehicle_id'] == v.id && a['unassigned_at'] == null);
+                      bool isAssigned = _assignments.any((a) => a['assigned_user_id'] == _selectedTrackman?.id && a['vehicle_id'] == v.id && a['is_active'] == true);
                       return DropdownMenuItem(
                         value: v, 
                         child: Text('${v.vehicleId} (${v.variant})${isAssigned ? " - Current" : ""}'),

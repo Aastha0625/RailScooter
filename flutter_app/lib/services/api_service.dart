@@ -150,7 +150,7 @@ class ApiService {
 
 
   static Future<List<AppUser>> fetchUsers({String? division, String? zone, String? role}) async {
-    var query = _sb.from('app_users').select('*');
+    var query = _sb.from('app_users').select('*').eq('approval_status', 'approved');
     if (division != null) query = query.eq('division', division);
     if (zone != null) query = query.eq('zone', zone);
     if (role != null) query = query.eq('role', role);
