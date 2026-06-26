@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import 'trackman_history_screen.dart';
 import 'trackman_safety_screen.dart';
-import 'trackman_geofencing_screen.dart';
 import 'trackman_report_issue_screen.dart';
 import 'trackman_task_details_screen.dart';
 import 'trackman_tasks_screen.dart';

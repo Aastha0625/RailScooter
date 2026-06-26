@@ -6,7 +6,7 @@ router.get('/', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('app_users')
-      .select('*, departments(id, name, code)')
+      .select('*')
       .order('full_name');
     if (error) throw error;
     res.json(data);
@@ -19,7 +19,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('app_users')
-      .select('*, departments(id, name, code)')
+      .select('*')
       .eq('id', req.params.id)
       .maybeSingle();
     if (error) throw error;

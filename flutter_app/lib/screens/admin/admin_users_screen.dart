@@ -45,7 +45,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
       if (mounted) {
         
         setState(() {
-          _users = results[0] as List<AppUser>;
+          _users = results[0];
           _pending = _users.where((u) => u.approvalStatus == 'pending').toList();
           _current = _users.where((u) => u.approvalStatus != 'pending').toList();
 
@@ -100,6 +100,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
           _buildTopBar(),
           Container(
             color: AppColors.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TabBar(
               controller: _tabController,
               indicatorColor: AppColors.accent,

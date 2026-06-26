@@ -125,7 +125,7 @@ router.get('/geofences/all', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('geofences')
-      .select('*, departments(id, name, code)')
+      .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data);

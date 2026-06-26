@@ -253,7 +253,7 @@ class _AdminFleetScreenState extends State<AdminFleetScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom),
         child: StatefulBuilder(
           builder: (ctx, setModal) => Container(
             decoration: const BoxDecoration(
@@ -289,19 +289,19 @@ class _AdminFleetScreenState extends State<AdminFleetScreen> {
                     Row(
                       children: [
                         const Expanded(child: Text('GPS Enabled', style: AppTextStyles.body)),
-                        Switch(value: gpsEnabled, onChanged: (v) => setModal(() => gpsEnabled = v), activeColor: AppColors.accent),
+                        Switch(value: gpsEnabled, onChanged: (v) => setModal(() => gpsEnabled = v), activeThumbColor: AppColors.accent),
                       ],
                     ),
                     Row(
                       children: [
                         const Expanded(child: Text('Trackman Enabled', style: AppTextStyles.body)),
-                        Switch(value: trackmanEnabled, onChanged: (v) => setModal(() => trackmanEnabled = v), activeColor: AppColors.accent),
+                        Switch(value: trackmanEnabled, onChanged: (v) => setModal(() => trackmanEnabled = v), activeThumbColor: AppColors.accent),
                       ],
                     ),
                     Row(
                       children: [
                         const Expanded(child: Text('Safety Features Enabled', style: AppTextStyles.body)),
-                        Switch(value: safetyEnabled, onChanged: (v) => setModal(() => safetyEnabled = v), activeColor: AppColors.accent),
+                        Switch(value: safetyEnabled, onChanged: (v) => setModal(() => safetyEnabled = v), activeThumbColor: AppColors.accent),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -508,7 +508,7 @@ class VehicleEditSheet extends StatefulWidget {
   final Vehicle vehicle;
   final VoidCallback onUpdated;
 
-  const VehicleEditSheet({required this.vehicle, required this.onUpdated});
+  const VehicleEditSheet({super.key, required this.vehicle, required this.onUpdated});
 
   @override
   State<VehicleEditSheet> createState() => _VehicleEditSheetState();
@@ -560,7 +560,7 @@ class _VehicleEditSheetState extends State<VehicleEditSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

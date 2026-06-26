@@ -99,81 +99,85 @@ class _AppSidebarState extends State<AppSidebar> {
           ),
 
           // User Footer
-          GestureDetector(
-            onTap: widget.onProfileTap,
-            child: Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.accent,
-                    child: Text(
-                      widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+          SafeArea(
+            bottom: true,
+            top: false,
+            child: GestureDetector(
+              onTap: widget.onProfileTap,
+              child: Container(
+                margin: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: AppColors.accent,
+                      child: Text(
+                        widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.userName,
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(widget.userRole,
-                            style: const TextStyle(color: Colors.white54, fontSize: 9)),
-                      ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.userName,
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(widget.userRole,
+                              style: const TextStyle(color: Colors.white54, fontSize: 9)),
+                        ],
+                      ),
                     ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 16),
-                    offset: const Offset(0, -80),
-                    onSelected: (value) async {
-                      if (value == 'profile' && widget.onProfileTap != null) {
-                        widget.onProfileTap!();
-                      } else if (value == 'logout') {
-                        final confirm = await _showLogoutConfirmation();
-                        if (confirm == true) {
-                          await Supabase.instance.client.auth.signOut();
-                          if (mounted) {
-                            Navigator.of(context).popUntil((route) => route.isFirst);
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 16),
+                      offset: const Offset(0, -80),
+                      onSelected: (value) async {
+                        if (value == 'profile' && widget.onProfileTap != null) {
+                          widget.onProfileTap!();
+                        } else if (value == 'logout') {
+                          final confirm = await _showLogoutConfirmation();
+                          if (confirm == true) {
+                            await Supabase.instance.client.auth.signOut();
+                            if (mounted) {
+                              Navigator.of(context).popUntil((route) => route.isFirst);
+                            }
                           }
                         }
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      if (widget.onProfileTap != null)
+                      },
+                      itemBuilder: (context) => [
+                        if (widget.onProfileTap != null)
+                          const PopupMenuItem(
+                            value: 'profile',
+                            child: Row(
+                              children: [
+                                Icon(Icons.person_outline, color: AppColors.textPrimary, size: 16),
+                                SizedBox(width: 8),
+                                Text('View Profile', style: TextStyle(fontSize: 13)),
+                              ],
+                            ),
+                          ),
                         const PopupMenuItem(
-                          value: 'profile',
+                          value: 'logout',
                           child: Row(
                             children: [
-                              Icon(Icons.person_outline, color: AppColors.textPrimary, size: 16),
+                              Icon(Icons.logout_rounded, color: AppColors.severityCritical, size: 16),
                               SizedBox(width: 8),
-                              Text('View Profile', style: TextStyle(fontSize: 13)),
+                              Text('Log Out', style: TextStyle(fontSize: 13)),
                             ],
                           ),
                         ),
-                      const PopupMenuItem(
-                        value: 'logout',
-                        child: Row(
-                          children: [
-                            Icon(Icons.logout_rounded, color: AppColors.severityCritical, size: 16),
-                            SizedBox(width: 8),
-                            Text('Log Out', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

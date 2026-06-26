@@ -463,7 +463,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           padding: EdgeInsets.fromLTRB(
-              20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+              20, 20, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 20),
           child: Form(
             key: formKey,
             child: SingleChildScrollView(

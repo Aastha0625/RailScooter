@@ -29,7 +29,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String _jobRole = 'Trackman';
   String _zone = 'North Western Railway';
   String _division = 'Bikaner';
-  List<String> _selectedRegions = [];
+  final List<String> _selectedRegions = [];
   final _empIdCtrl = TextEditingController();
 
   final Color bgColor = const Color(0xFF0A1118);

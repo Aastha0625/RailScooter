@@ -173,7 +173,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to assign task: \$e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Failed to assign task: \$e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -516,7 +516,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
     required ValueChanged<T?>? onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       items: items,
       onChanged: onChanged,
       validator: (v) => v == null ? 'Required selection' : null,

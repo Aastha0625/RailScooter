@@ -355,7 +355,7 @@ class _IconAction extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color color;
-  const _IconAction({required this.icon, required this.onTap, this.color = AppColors.textSecondary});
+  const _IconAction({required this.icon, required this.onTap}) : color = AppColors.textSecondary;
 
   @override
   Widget build(BuildContext context) => GestureDetector(

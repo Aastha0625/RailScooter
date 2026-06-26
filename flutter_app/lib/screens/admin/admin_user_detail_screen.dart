@@ -253,7 +253,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                     children: [
                       CircleAvatar(
                         radius: 26,
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                         child: Text(
                           widget.user.fullName.isNotEmpty ? widget.user.fullName[0].toUpperCase() : '?',
                           style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 20),
@@ -300,8 +300,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
                             backgroundColor: widget.user.isActive 
-                                ? AppColors.severityCritical.withOpacity(0.1) 
-                                : AppColors.statusActive.withOpacity(0.1),
+                                ? AppColors.severityCritical.withValues(alpha: 0.1) 
+                                : AppColors.statusActive.withValues(alpha: 0.1),
                             foregroundColor: widget.user.isActive 
                                 ? AppColors.severityCritical 
                                 : AppColors.statusActive,
@@ -321,7 +321,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                       if (!widget.user.isActive) ...[
                         const SizedBox(width: 8),
                         IconButton(
-                          style: IconButton.styleFrom(backgroundColor: AppColors.severityCritical.withOpacity(0.1)),
+                          style: IconButton.styleFrom(backgroundColor: AppColors.severityCritical.withValues(alpha: 0.1)),
                           icon: const Icon(Icons.delete_forever, color: AppColors.severityCritical, size: 24),
                           onPressed: _deleteUser,
                           tooltip: 'Delete User',
@@ -457,7 +457,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: AppColors.textLight.withOpacity(0.5)),
+      border: Border.all(color: AppColors.textLight.withValues(alpha: 0.5)),
     ),
     child: DropdownButtonHideUnderline(
       child: DropdownButton<T>(

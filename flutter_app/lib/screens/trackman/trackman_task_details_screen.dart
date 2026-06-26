@@ -72,7 +72,7 @@ class _TrackmanTaskDetailsScreenState extends State<TrackmanTaskDetailsScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update: \$e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update: \$e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _updating = false);
@@ -152,7 +152,7 @@ class _TrackmanTaskDetailsScreenState extends State<TrackmanTaskDetailsScreen> {
             const SizedBox(height: 24),
             SwitchListTile(
               value: isCompleted,
-              activeColor: Colors.green,
+              activeThumbColor: Colors.green,
               title: const Text("Mark Task as Completed", style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: _updating ? const Text("Updating...") : null,
               onChanged: _updating ? null : _toggleStatus,
