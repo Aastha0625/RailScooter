@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/user.dart';
 import '../../services/api_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_base_screen.dart';
 import 'admin_user_detail_screen.dart';
 
@@ -164,8 +163,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
 
   Widget _buildTopBar() {
     return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
+      padding: const EdgeInsets.only(
+        top: 16,
         left: 20, right: 20, bottom: 12,
       ),
       color: AppColors.primary,

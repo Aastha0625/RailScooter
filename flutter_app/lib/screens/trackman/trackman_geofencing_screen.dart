@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
@@ -14,7 +15,7 @@ class TrackmanGeofencingScreen extends StatefulWidget {
 }
 
 class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   LatLng? _currentLocation;
   bool _locationLoading = true;
   String? _locationError;
@@ -26,12 +27,6 @@ class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
   void initState() {
     super.initState();
     _fetchLocation();
-  }
-
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchLocation() async {
@@ -61,9 +56,7 @@ class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
           _currentLocation = latlng;
           _locationLoading = false;
         });
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(latlng, 15),
-        );
+        _mapController.move(latlng, 15);
       }
     } catch (e) {
       if (mounted) {
@@ -83,36 +76,34 @@ class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
       appBar: const CustomAppBar(title: 'My Current Zone'),
       body: Stack(
         children: [
-          // ── Google Map ────────────────────────────────────────────────────
-          GoogleMap(
-            onMapCreated: (controller) {
-              _mapController = controller;
-              if (_currentLocation != null) {
-                controller.animateCamera(
-                  CameraUpdate.newLatLngZoom(_currentLocation!, 15),
-                );
-              }
-            },
-            initialCameraPosition: CameraPosition(
-              target: position,
-              zoom: 15.0,
+          // ── Flutter Map ────────────────────────────────────────────────────
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: position,
+              initialZoom: 15.0,
             ),
-            markers: _currentLocation == null
-                ? {}
-                : {
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.piscoot.app',
+              ),
+              if (_currentLocation != null)
+                MarkerLayer(
+                  markers: [
                     Marker(
-                      markerId: const MarkerId('scooter'),
-                      position: _currentLocation!,
-                      icon: BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueGreen),
-                      infoWindow: const InfoWindow(title: 'My Location'),
+                      point: _currentLocation!,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.green,
+                        size: 40,
+                      ),
                     ),
-                  },
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false, // we have our own button
-            zoomControlsEnabled: true,
-            mapToolbarEnabled: false,
-            compassEnabled: true,
+                  ],
+                ),
+            ],
           ),
 
           // ── Status card overlay ───────────────────────────────────────────
@@ -183,10 +174,14 @@ class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Flexible(
-                          child: Text('Max Speed Limit',
-                              style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w500))),
+                        child: Text(
+                          'Max Speed Limit',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                       SizedBox(width: 8),
                       Text('20 km/h',
                           style: TextStyle(

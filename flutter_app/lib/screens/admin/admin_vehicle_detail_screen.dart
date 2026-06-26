@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
@@ -175,26 +176,31 @@ class _AdminVehicleDetailScreenState extends State<AdminVehicleDetailScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: GoogleMap(
-          initialCameraPosition: CameraPosition(
-            target: _dummyLatLng,
-            zoom: 14,
+        child: FlutterMap(
+          options: MapOptions(
+            initialCenter: _dummyLatLng,
+            initialZoom: 14,
           ),
-          markers: {
-            Marker(
-              markerId: const MarkerId('vehicle'),
-              position: _dummyLatLng,
-              infoWindow: InfoWindow(
-                title: _vehicle.vehicleId,
-                snippet: '${_dummySpeed.toStringAsFixed(1)} km/h · $_dummyBattery% battery',
-              ),
-              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.piscoot.app',
             ),
-          },
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          compassEnabled: false,
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: _dummyLatLng,
+                  width: 40,
+                  height: 40,
+                  child: const Icon(
+                    Icons.location_on,
+                    color: Colors.blue,
+                    size: 40,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

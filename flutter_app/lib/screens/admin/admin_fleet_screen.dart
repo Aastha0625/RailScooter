@@ -111,8 +111,8 @@ class _AdminFleetScreenState extends State<AdminFleetScreen> {
 
   Widget _buildTopBar() {
     return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
+      padding: const EdgeInsets.only(
+        top: 16,
         left: 20, right: 20, bottom: 16,
       ),
       color: AppColors.primary,

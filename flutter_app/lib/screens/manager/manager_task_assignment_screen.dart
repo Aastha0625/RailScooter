@@ -8,7 +8,7 @@ import '../../services/api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/app_constants.dart';
 import '../../widgets/map_selection_screen.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class ManagerTaskAssignmentScreen extends StatefulWidget {
   const ManagerTaskAssignmentScreen({super.key});
