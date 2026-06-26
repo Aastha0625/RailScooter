@@ -204,25 +204,24 @@ class _NewDispatchDialog extends StatefulWidget {
 class _NewDispatchDialogState extends State<_NewDispatchDialog> {
   bool _loading = true;
   bool _submitting = false;
-  List<dynamic> _availableTrackmen = [];
+  List<AppUser> _availableTrackmen = [];
   List<dynamic> _availableVehicles = [];
   
   String? _selectedTrackmanId;
   String? _selectedVehicleId;
 
   @override
-  void initState() {
+void initState() {
     super.initState();
     _fetchOptions();
   }
 
   Future<void> _fetchOptions() async {
     try {
-      // Fetch Trackmen (we'll fetch all and filter in memory for simplicity, though SQL joins are better in production)
-      final trackmenData = await Supabase.instance.client
-          .from('app_users')
-          .select('id, full_name')
-          .eq('role', 'trackman');
+      final manager = await ApiService.fetchCurrentUserData();
+      
+      // Fetch Trackmen (filter by manager's division and only approved trackmen via ApiService)
+      final trackmenData = await ApiService.fetchUsers(division: manager?.division, role: 'trackman');
 
       // Fetch Vehicles
       final vehiclesData = await Supabase.instance.client
@@ -240,10 +239,10 @@ class _NewDispatchDialogState extends State<_NewDispatchDialog> {
       final busyVehicleIds = activeAssignments.map((a) => a['vehicle_id'] as String).toSet();
 
       setState(() {
-        _availableTrackmen = trackmenData.where((t) => !busyTrackmenIds.contains(t['id'])).toList();
+        _availableTrackmen = trackmenData.where((t) => !busyTrackmenIds.contains(t.id)).toList();
         _availableVehicles = vehiclesData.where((v) => !busyVehicleIds.contains(v['id'])).toList();
         
-        if (_availableTrackmen.isNotEmpty) _selectedTrackmanId = _availableTrackmen.first['id'];
+        if (_availableTrackmen.isNotEmpty) _selectedTrackmanId = _availableTrackmen.first.id;
         if (_availableVehicles.isNotEmpty) _selectedVehicleId = _availableVehicles.first['id'];
         
         _loading = false;
@@ -309,7 +308,7 @@ class _NewDispatchDialogState extends State<_NewDispatchDialog> {
                       fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
                     ),
-                    items: _availableTrackmen.map((t) => DropdownMenuItem<String>(value: t['id'], child: Text(t['full_name']))).toList(),
+                    items: _availableTrackmen.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.fullName))).toList(),
                     onChanged: (val) {
                       if (val != null) setState(() => _selectedTrackmanId = val);
                     },
