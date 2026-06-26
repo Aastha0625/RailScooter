@@ -196,24 +196,50 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
                             ),
                           ),
                         if (lat != null && lng != null && imageUrl != null) const SizedBox(width: 12),
-                        if (imageUrl != null)
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                imageUrl,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
+                          if (imageUrl != null)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          InteractiveViewer(
+                                            child: Image.network(imageUrl),
+                                          ),
+                                          Positioned(
+                                            top: -10,
+                                            right: -10,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                              onPressed: () => Navigator.pop(context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
                                 },
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: Colors.grey.shade200,
-                                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(child: CircularProgressIndicator());
+                                    },
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.grey.shade200,
+                                      child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                       ],
                     ),
                   ),
