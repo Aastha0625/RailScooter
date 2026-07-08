@@ -33,7 +33,7 @@ class _ManagerTasksScreenState extends State<ManagerTasksScreen> {
       _manager = user;
       
       final tasks = await ApiService.fetchTasks(
-        regions: user.regions,
+        assignedByUserId: user.id,
       );
       if (mounted) {
         setState(() {

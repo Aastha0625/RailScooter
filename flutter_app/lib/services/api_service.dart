@@ -482,6 +482,7 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> fetchTasks({
     String? assignedToUserId,
+    String? assignedByUserId,
     List<String>? regions,
     String? division,
     String? zone,
@@ -489,6 +490,9 @@ class ApiService {
     var query = _sb.from('trackman_tasks').select('*, app_users(full_name), vehicles(vehicle_id, variant)');
     if (assignedToUserId != null) {
       query = query.eq('assigned_to', assignedToUserId);
+    }
+    if (assignedByUserId != null) {
+      query = query.eq('assigned_by', assignedByUserId);
     }
     if (regions != null && regions.isNotEmpty) {
       query = query.inFilter('region', regions);
