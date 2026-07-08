@@ -175,11 +175,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     _buildStatCardsGrid(),
                     const SizedBox(height: 28),
 
-                    _buildSectionHeader(Icons.warning_amber_rounded, 'Live Alerts Preview', AppColors.severityHigh),
-                    const SizedBox(height: 12),
-                    _buildAlertsPreview(),
-                    const SizedBox(height: 28),
-
                     _buildSectionHeader(Icons.rule_outlined, 'Active Rules', AppColors.primary),
                     const SizedBox(height: 12),
                     _buildRulesPreview(),
