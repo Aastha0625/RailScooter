@@ -117,6 +117,22 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     }
   }
 
+  Future<void> _simulateAlert() async {
+    setState(() => _loading = true);
+    try {
+      await ApiService.simulateAlertEvent();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Simulated Alert Injected!')));
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to inject alert: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final unackCount = _events.where((e) => !e.isAcknowledged).length;
@@ -153,13 +169,19 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
       ),
     );
 
-    final floatingActionButton = _tabs.index == 0
-        ? FloatingActionButton(
+    final isEventsTab = _tabs.index == 1;
+    final floatingActionButton = isEventsTab
+        ? FloatingActionButton.extended(
+            onPressed: _simulateAlert,
+            backgroundColor: AppColors.severityCritical,
+            icon: const Icon(Icons.bug_report, color: Colors.white),
+            label: const Text('Simulate Alert', style: TextStyle(color: Colors.white)),
+          )
+        : FloatingActionButton(
             onPressed: _showAddRule,
             backgroundColor: AppColors.accent,
             child: const Icon(Icons.add, color: Colors.white),
-          )
-        : null;
+          );
 
     final body = _loading
         ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
@@ -362,8 +384,19 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
   }
 
   Future<void> _acknowledge(String id) async {
-    await ApiService.acknowledgeAlert(id);
-    _load();
+    try {
+      if (id.startsWith('dummy')) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot acknowledge static dummy data. Use Simulate Alert to test this feature.')));
+        return;
+      }
+      
+      await ApiService.acknowledgeAlert(id);
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to acknowledge: $e')));
+      }
+    }
   }
 
   Widget _enumDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged, {Map<String, String>? displayMap}) =>

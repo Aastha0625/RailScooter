@@ -9,6 +9,7 @@ import '../../models/geofence.dart';
 import '../../models/vehicle_location.dart';
 import '../../services/api_service.dart';
 import '../../services/railway_routing_service.dart';
+import '../../constants/app_constants.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../admin/admin_base_screen.dart';
 import '../manager/manager_base_screen.dart';
@@ -486,9 +487,9 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                   Autocomplete<String>(
                     optionsBuilder: (TextEditingValue textEditingValue) {
                       if (textEditingValue.text.isEmpty) {
-                        return const ['Depot A', 'Depot B', 'Station 1', 'Maintenance Zone', 'Hazard Zone'];
+                        return AppConstants.zones;
                       }
-                      return const ['Depot A', 'Depot B', 'Station 1', 'Maintenance Zone', 'Hazard Zone']
+                      return AppConstants.zones
                           .where((String option) => option.toLowerCase().contains(textEditingValue.text.toLowerCase()));
                     },
                     onSelected: (String selection) {

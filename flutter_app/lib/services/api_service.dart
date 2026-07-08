@@ -329,7 +329,28 @@ class ApiService {
   }
 
   static Future<void> acknowledgeAlert(String alertId) async {
-    await _request('PUT', '/alerts/events/$alertId/acknowledge');
+    // Check if it's a dummy alert first so we don't crash
+    if (alertId.startsWith('dummy')) return;
+    
+    await _sb.from('vehicle_alerts')
+        .update({'is_acknowledged': true})
+        .eq('id', alertId);
+  }
+
+  static Future<void> simulateAlertEvent() async {
+    // Pick a random vehicle
+    final vehiclesData = await _sb.from('vehicles').select('id').limit(1);
+    if (vehiclesData.isEmpty) throw Exception("No vehicles found");
+    final vehicleId = vehiclesData.first['id'];
+
+    await _sb.from('vehicle_alerts').insert({
+      'vehicle_id': vehicleId,
+      'alert_type': 'geofence',
+      'severity': 'critical',
+      'message': 'Simulated Alert: Manual DB Injection',
+      'latitude': 28.6139,
+      'longitude': 77.2090,
+    });
   }
 
   // -------- GEOFENCES --------
