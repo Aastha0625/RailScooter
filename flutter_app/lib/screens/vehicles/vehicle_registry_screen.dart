@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
-import '../../widgets/custom_app_bar.dart';
 import '../admin/admin_base_screen.dart';
 import '../manager/manager_base_screen.dart';
 import '../trackman/trackman_base_screen.dart';
 import 'vehicle_registration_screen.dart';
-import 'vehicle_details_sheet.dart';
 import '../admin/admin_vehicle_detail_screen.dart';
 
 class VehicleRegistryScreen extends StatefulWidget {

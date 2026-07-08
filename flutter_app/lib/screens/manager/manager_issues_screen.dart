@@ -193,6 +193,7 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
                         if (lat != null && lng != null)
                           Expanded(
                             child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 showDialog(
                                   context: context,
@@ -225,7 +226,7 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: IgnorePointer(
+                                child: AbsorbPointer(
                                   child: _IssueMapWidget(lat: lat, lng: lng),
                                 ),
                               ),
@@ -235,6 +236,7 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
                           if (imageUrl != null)
                             Expanded(
                               child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   showDialog(
                                     context: context,

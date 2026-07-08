@@ -6,7 +6,6 @@ import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'trackman_base_screen.dart';
 import '../../services/api_service.dart';
-import '../../models/user.dart';
 
 class TrackmanGeofencingScreen extends StatefulWidget {
   const TrackmanGeofencingScreen({super.key});

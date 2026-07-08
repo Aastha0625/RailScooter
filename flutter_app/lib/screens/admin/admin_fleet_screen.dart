@@ -112,7 +112,7 @@ class _AdminFleetScreenState extends State<AdminFleetScreen> {
   Widget _buildTopBar() {
     return Container(
       padding: const EdgeInsets.only(
-        top: 16,
+        top: 0,
         left: 20, right: 20, bottom: 16,
       ),
       color: AppColors.primary,

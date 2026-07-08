@@ -125,12 +125,12 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 child: const Icon(Icons.assignment_ind, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Manager Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
-                      const Text('Central Railway', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                      Text('Manager Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
+                      Text('Central Railway', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),

@@ -54,11 +54,13 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> with SingleTick
           ''')
           .order('created_at', ascending: false);
           
-      if (mounted) setState(() { 
+      if (mounted) {
+        setState(() { 
         _alerts = alerts; 
         _issues = issuesData;
         _loading = false; 
       });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -183,7 +185,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> with SingleTick
     final unackCount = _alerts.where((a) => !a.isAcknowledged).length;
     return Container(
       padding: const EdgeInsets.only(
-        top: 16,
+        top: 0,
         left: 20, right: 20, bottom: 16,
       ),
       color: AppColors.primary,
@@ -227,7 +229,6 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> with SingleTick
     ];
 
     return Container(
-      color: Colors.white,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Column(
         children: [
@@ -508,6 +509,7 @@ class _IssueCard extends StatelessWidget {
                         if (lat != null && lng != null)
                           Expanded(
                             child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 showDialog(
                                   context: context,
@@ -540,7 +542,7 @@ class _IssueCard extends StatelessWidget {
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: IgnorePointer(
+                                child: AbsorbPointer(
                                   child: _IssueMapWidget(lat: lat, lng: lng),
                                 ),
                               ),
@@ -771,9 +773,9 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]),
-              child: Text(
+              child: const Text(
                 ' km -  min',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
               ),
             ),
           ),
