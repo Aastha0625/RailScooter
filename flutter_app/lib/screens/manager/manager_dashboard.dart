@@ -246,8 +246,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                     if (event is FlTapUpEvent) {
                       final title = pieTouchResponse.touchedSection!.touchedSection!.title;
                       String? status;
-                      if (title == active.toString() && active > 0) status = 'active';
-                      else if (title == idle.toString() && idle > 0) status = 'idle';
+                      if (title == active.toString() && active > 0) {
+                        status = 'active';
+                      } else if (title == idle.toString() && idle > 0) status = 'idle';
                       else if (title == maintenance.toString() && maintenance > 0) status = 'maintenance';
                       else if (title == offline.toString() && offline > 0) status = 'offline';
 

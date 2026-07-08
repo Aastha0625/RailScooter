@@ -122,15 +122,15 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.directions_car_filled_outlined, size: 64, color: AppColors.textLight),
-          const SizedBox(height: 16),
-          const Text('No Active Dispatches', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          const Text('All vehicles are currently idle.', style: TextStyle(color: AppColors.textSecondary)),
+          SizedBox(height: 16),
+          Text('No Active Dispatches', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          SizedBox(height: 8),
+          Text('All vehicles are currently idle.', style: TextStyle(color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -317,7 +317,7 @@ class _NewDispatchDialogState extends State<_NewDispatchDialog> {
                   const Text('Select Trackman', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedTrackmanId,
+                    initialValue: _selectedTrackmanId,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
@@ -332,7 +332,7 @@ class _NewDispatchDialogState extends State<_NewDispatchDialog> {
                   const Text('Select Vehicle', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedVehicleId,
+                    initialValue: _selectedVehicleId,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,

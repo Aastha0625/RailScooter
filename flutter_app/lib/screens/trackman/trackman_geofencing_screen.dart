@@ -9,7 +9,7 @@ class TrackmanGeofencingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Dummy coordinates for the demonstration map
-    final currentLocation = const LatLng(51.509865, -0.118092); // Example: London Waterloo area
+    const currentLocation = LatLng(51.509865, -0.118092); // Example: London Waterloo area
     
     return Scaffold(
       backgroundColor: AppColors.background,

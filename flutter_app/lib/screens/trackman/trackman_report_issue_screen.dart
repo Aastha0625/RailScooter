@@ -278,7 +278,7 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
               const Text('Category', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 dropdownColor: Colors.white,
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(

@@ -189,7 +189,7 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
               if (hasAssignment)
                 Switch(
                   value: _isUnlocked,
-                  activeColor: Colors.greenAccent,
+                  activeThumbColor: Colors.greenAccent,
                   onChanged: (val) {
                     setState(() {
                       _isUnlocked = val;

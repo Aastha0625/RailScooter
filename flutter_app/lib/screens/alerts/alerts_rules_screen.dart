@@ -419,9 +419,9 @@ class _RuleCard extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              if (rule.notificationEmail) _NotifIcon(icon: Icons.email_outlined),
-              if (rule.notificationPush) _NotifIcon(icon: Icons.notifications_outlined),
-              if (rule.notificationSms) _NotifIcon(icon: Icons.sms_outlined),
+              if (rule.notificationEmail) const _NotifIcon(icon: Icons.email_outlined),
+              if (rule.notificationPush) const _NotifIcon(icon: Icons.notifications_outlined),
+              if (rule.notificationSms) const _NotifIcon(icon: Icons.sms_outlined),
             ],
           ),
         ],

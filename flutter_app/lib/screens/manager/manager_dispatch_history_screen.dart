@@ -76,15 +76,15 @@ class _ManagerDispatchHistoryScreenState extends State<ManagerDispatchHistoryScr
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.history_outlined, size: 64, color: AppColors.textLight),
-          const SizedBox(height: 16),
-          const Text('No Dispatch History', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          const Text('There are no recorded dispatches yet.', style: TextStyle(color: AppColors.textSecondary)),
+          SizedBox(height: 16),
+          Text('No Dispatch History', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          SizedBox(height: 8),
+          Text('There are no recorded dispatches yet.', style: TextStyle(color: AppColors.textSecondary)),
         ],
       ),
     );

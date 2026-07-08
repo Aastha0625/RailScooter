@@ -207,7 +207,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down, size: 18),
           items: [
-            DropdownMenuItem(value: null, child: Text('All', style: TextStyle(fontSize: 13))),
+            const DropdownMenuItem(value: null, child: Text('All', style: TextStyle(fontSize: 13))),
             ...items.map((s) => DropdownMenuItem(
               value: s,
               child: Text(s, style: const TextStyle(fontSize: 13)),
@@ -351,9 +351,9 @@ class _VehicleListItem extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                if (vehicle.gpsEnabled) _FeatureTag(label: 'GPS', icon: Icons.gps_fixed, color: AppColors.statusActive),
+                if (vehicle.gpsEnabled) const _FeatureTag(label: 'GPS', icon: Icons.gps_fixed, color: AppColors.statusActive),
                 if (vehicle.gpsEnabled) const SizedBox(width: 8),
-                if (vehicle.trackmanEnabled) _FeatureTag(label: 'Trackman', icon: Icons.shield_outlined, color: AppColors.primary),
+                if (vehicle.trackmanEnabled) const _FeatureTag(label: 'Trackman', icon: Icons.shield_outlined, color: AppColors.primary),
                 const Spacer(),
                 Text(vehicle.firmwareVersion, style: AppTextStyles.caption.copyWith(color: AppColors.textLight)),
               ],

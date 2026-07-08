@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/welcome_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/admin/admin_shell.dart';
 import 'screens/manager/manager_dashboard.dart';
 import 'screens/trackman/trackman_dashboard.dart';

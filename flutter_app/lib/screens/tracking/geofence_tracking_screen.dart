@@ -487,12 +487,12 @@ class _GeofenceCard extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(Icons.location_on_outlined, size: 13, color: AppColors.textLight),
+            const Icon(Icons.location_on_outlined, size: 13, color: AppColors.textLight),
             const SizedBox(width: 4),
             Text('${geofence.centerLat.toStringAsFixed(4)}, ${geofence.centerLng.toStringAsFixed(4)}',
                 style: AppTextStyles.caption),
             const SizedBox(width: 8),
-            Icon(Icons.radio_button_unchecked, size: 13, color: AppColors.textLight),
+            const Icon(Icons.radio_button_unchecked, size: 13, color: AppColors.textLight),
             const SizedBox(width: 4),
             Text('${geofence.radiusMeters.round()}m', style: AppTextStyles.caption),
           ],
@@ -500,10 +500,10 @@ class _GeofenceCard extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            if (geofence.alertOnExit) _AlertTag(label: 'Exit Alert'),
+            if (geofence.alertOnExit) const _AlertTag(label: 'Exit Alert'),
             if (geofence.alertOnEnter) ...[
               const SizedBox(width: 6),
-              _AlertTag(label: 'Entry Alert'),
+              const _AlertTag(label: 'Entry Alert'),
             ],
             const Spacer(),
             TextButton.icon(
