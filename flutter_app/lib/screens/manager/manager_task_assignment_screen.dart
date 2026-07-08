@@ -121,6 +121,38 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
     setState(() => _submitting = true);
 
     try {
+      // Check if the trackman already has an active assignment for a DIFFERENT vehicle
+      final currentActiveForUser = _assignments.firstWhere(
+          (a) => a['assigned_user_id'] == _selectedTrackman!.id && a['is_active'] == true, 
+          orElse: () => <String, dynamic>{});
+          
+      if (currentActiveForUser.isNotEmpty && currentActiveForUser['vehicle_id'] != _selectedVehicle!.id) {
+        // Pause submitting state to show dialog
+        setState(() => _submitting = false);
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Recall Vehicle'),
+            content: Text('${_selectedTrackman!.fullName} is already assigned to another vehicle. Do you want to recall their current vehicle and assign this new one?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
+                child: const Text('Recall & Assign', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirm != true) return;
+        
+        setState(() => _submitting = true);
+      }
+
       // Create date time object
       final scheduledTime = DateTime(
         _selectedDate!.year, _selectedDate!.month, _selectedDate!.day,

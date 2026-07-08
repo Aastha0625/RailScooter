@@ -87,11 +87,25 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
   }
 
   Future<void> _openMapPicker() async {
+    LatLng startingLocation = _issueLocation ?? const LatLng(51.509865, -0.118092); // Fallback
+
+    if (_issueLocation == null) {
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+          final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
+          startingLocation = LatLng(pos.latitude, pos.longitude);
+        }
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+    
     final selected = await Navigator.push<LatLng>(
       context,
       MaterialPageRoute(
         builder: (_) => MapPickerScreen(
-          initialLocation: _issueLocation ?? const LatLng(51.509865, -0.118092),
+          initialLocation: startingLocation,
         ),
       ),
     );
@@ -118,12 +132,18 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
       if (user == null) throw Exception('User not logged in');
 
       // Check active assignment
-      final activeAssignment = await Supabase.instance.client
+      final data = await Supabase.instance.client
           .from('vehicle_assignments')
           .select('vehicle_id')
           .eq('assigned_user_id', user.id)
           .eq('is_active', true)
-          .maybeSingle();
+          .order('created_at', ascending: false)
+          .limit(1);
+
+      Map<String, dynamic>? activeAssignment;
+      if (data.isNotEmpty) {
+        activeAssignment = Map<String, dynamic>.from(data.first);
+      }
 
       String? imageUrl;
 

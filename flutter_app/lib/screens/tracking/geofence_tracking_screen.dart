@@ -630,8 +630,10 @@ class _GeofenceCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onViewOnMap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -701,7 +703,8 @@ class _GeofenceCard extends StatelessWidget {
             ),
           ],
         ),
-      );
+      ),
+    );
 }
 
 class _TypeBadge extends StatelessWidget {

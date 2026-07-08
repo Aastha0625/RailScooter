@@ -91,6 +91,14 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
 
     final trackmanName = task['app_users']?['full_name'] ?? 'Unknown Trackman';
 
+    String vehicleName = "No Vehicle Assigned";
+    if (task['vehicles'] != null) {
+      final vId = task['vehicles']['vehicle_id'] ?? '';
+      final vVar = task['vehicles']['variant'] ?? '';
+      vehicleName = "$vId $vVar".trim();
+      if (vehicleName.isEmpty) vehicleName = "Unknown Vehicle";
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -123,6 +131,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                   _infoTile(Icons.schedule, "Scheduled Time", formattedTime),
                   _infoTile(Icons.flag, "Priority", task["priority"] ?? "Normal"),
                   _infoTile(Icons.assignment_turned_in, "Current Status", task["status"] ?? "Assigned"),
+                  _infoTile(Icons.electric_scooter, "Assigned Vehicle", vehicleName),
                   const Divider(height: 32),
                   _infoTile(Icons.person, "Assigned To", trackmanName),
                   _infoTile(Icons.manage_accounts, "Assigned By", _managerName),
