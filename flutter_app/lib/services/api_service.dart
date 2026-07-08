@@ -257,10 +257,24 @@ class ApiService {
     String? assignedUserId,
     String? notes,
   }) async {
-    await _request('POST', '/assignments', body: {
+    if (assignedUserId != null) {
+      await _sb.from('vehicle_assignments')
+          .update({'is_active': false})
+          .eq('assigned_user_id', assignedUserId)
+          .eq('is_active', true);
+    }
+    
+    await _sb.from('vehicle_assignments')
+        .update({'is_active': false})
+        .eq('vehicle_id', vehicleId)
+        .eq('is_active', true);
+        
+    await _sb.from('vehicle_assignments').insert({
       'vehicle_id': vehicleId,
       'assigned_user_id': assignedUserId,
       'notes': notes ?? '',
+      'is_active': true,
+      'assigned_by': _sb.auth.currentUser?.id,
     });
   }
 

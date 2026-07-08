@@ -54,10 +54,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 );
                 if (confirm == true) {
-                  await Supabase.instance.client.auth.signOut();
                   if (context.mounted) {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
                   }
+                  // Run sign out without awaiting so UI doesn't hang on bad network
+                  Supabase.instance.client.auth.signOut();
                 }
               }
             },

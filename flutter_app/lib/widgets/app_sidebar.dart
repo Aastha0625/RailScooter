@@ -145,10 +145,10 @@ class _AppSidebarState extends State<AppSidebar> {
                         } else if (value == 'logout') {
                           final confirm = await _showLogoutConfirmation();
                           if (confirm == true) {
-                            await Supabase.instance.client.auth.signOut();
                             if (mounted) {
-                              Navigator.of(context).popUntil((route) => route.isFirst);
+                              Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
                             }
+                            Supabase.instance.client.auth.signOut();
                           }
                         }
                       },

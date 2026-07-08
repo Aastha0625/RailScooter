@@ -528,7 +528,6 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
         child: FutureBuilder<List<Map<String, dynamic>>>(
           future: ApiService.fetchTasks(
               assignedToUserId: Supabase.instance.client.auth.currentUser?.id,
-              regions: _trackmanUser?.regions,
           ),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {

@@ -31,7 +31,6 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
       
       final tasks = await ApiService.fetchTasks(
         assignedToUserId: user.id,
-        regions: user.regions,
       );
       if (mounted) {
         setState(() {
