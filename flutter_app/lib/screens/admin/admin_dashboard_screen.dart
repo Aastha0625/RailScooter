@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../theme/app_theme.dart';
-import '../../../services/api_service.dart';
-import '../../../models/alert_rule.dart';
-import '../../../models/vehicle_alert.dart';
+import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
+import '../../models/alert_rule.dart';
+import '../../models/vehicle_alert.dart';
+import '../../utils/formatters.dart';
+import '../tracking/geofence_tracking_screen.dart';
+import 'admin_base_screen.dart';
+import 'admin_fleet_screen.dart';
+import 'admin_users_screen.dart';
+import 'admin_tasks_screen.dart';
+import 'admin_activity_screen.dart';
 
-class AdminOverviewTab extends StatefulWidget {
-  const AdminOverviewTab({super.key});
+class AdminDashboardScreen extends StatefulWidget {
+  const AdminDashboardScreen({super.key});
 
   @override
-  State<AdminOverviewTab> createState() => _AdminOverviewTabState();
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
-class _AdminOverviewTabState extends State<AdminOverviewTab> {
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _loading = true;
   int _pendingCount = 0;
   int _totalUsers = 0;
@@ -23,10 +30,14 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   List<AlertRule> _rules = [];
   List<VehicleAlert> _alerts = [];
   RealtimeChannel? _channel;
+  RealtimeChannel? _alertsChannel;
+  RealtimeChannel? _rulesChannel;
+  String _adminName = 'Admin';
 
   @override
   void initState() {
     super.initState();
+    _loadAdminName();
     _loadData();
     _subscribeRealtime();
   }
@@ -34,26 +45,45 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   @override
   void dispose() {
     _channel?.unsubscribe();
+    _alertsChannel?.unsubscribe();
+    _rulesChannel?.unsubscribe();
     super.dispose();
+  }
+
+  Future<void> _loadAdminName() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final data = await Supabase.instance.client
+          .from('app_users')
+          .select('full_name')
+          .eq('id', uid)
+          .maybeSingle();
+      if (mounted && data != null) {
+        setState(() => _adminName = data['full_name'] ?? 'Admin');
+      }
+    } catch (e) {
+      debugPrint('Error loading admin name: $e');
+    }
   }
 
   Future<void> _loadData() async {
     try {
       final results = await Future.wait([
-        ApiService.fetchUsersByApprovalStatus('pending'),
-        ApiService.fetchAllUsersAdmin(),
-        ApiService.fetchActivityLog(limit: 20),
-        ApiService.fetchBroadcasts(),
+        ApiService.fetchPendingUsersCount(),
+        ApiService.fetchUsersCount(),
+        ApiService.fetchActivityLog(limit: 5), // Only need a preview now
+        ApiService.fetchBroadcastsCount(),
         ApiService.fetchDashboardStats(),
         ApiService.fetchAlertRules(),
         ApiService.fetchAlertEvents(unacknowledged: true),
       ]);
       if (!mounted) return;
       setState(() {
-        _pendingCount = (results[0] as List).length;
-        _totalUsers = (results[1] as List).length;
+        _pendingCount = results[0] as int;
+        _totalUsers = results[1] as int;
         _activityLog = results[2] as List<Map<String, dynamic>>;
-        _broadcastCount = (results[3] as List).length;
+        _broadcastCount = results[3] as int;
         final stats = results[4] as Map<String, int>;
         _totalVehicles = stats['total_vehicles'] ?? 0;
         _rules = (results[5] as List<AlertRule>).take(3).toList();
@@ -70,7 +100,29 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
       if (!mounted) return;
       setState(() {
         _activityLog.insert(0, payload);
-        if (_activityLog.length > 50) _activityLog.removeLast();
+        if (_activityLog.length > 5) _activityLog.removeLast();
+      });
+    });
+
+    _alertsChannel = ApiService.subscribeToAlertEvents((payload) {
+      if (!mounted) return;
+      setState(() {
+        final alert = VehicleAlert.fromJson(payload);
+        if (!alert.isAcknowledged) {
+          _alerts.insert(0, alert);
+          if (_alerts.length > 4) _alerts.removeLast();
+        }
+      });
+    });
+
+    _rulesChannel = ApiService.subscribeToAlertRules((payload) {
+      if (!mounted) return;
+      final updatedRule = AlertRule.fromJson(payload);
+      setState(() {
+        final index = _rules.indexWhere((r) => r.id == updatedRule.id);
+        if (index != -1) {
+          _rules[index] = updatedRule;
+        }
       });
     });
   }
@@ -78,72 +130,186 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+      return const AdminBaseScreen(
+        title: 'Overview',
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
       );
     }
 
-    return RefreshIndicator(
-      color: AppColors.accent,
-      onRefresh: _loadData,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Page Title
-          Row(
+    return AdminBaseScreen(
+      title: 'Overview',
+      body: RefreshIndicator(
+        color: AppColors.accent,
+        onRefresh: _loadData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.dashboard_rounded,
-                    color: AppColors.accent, size: 24),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              _buildHeroSection(),
+              const SizedBox(height: 16),
+              
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Overview',
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary)),
-                    Text('Admin command center',
-                        style: TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary)),
+                    const Text(
+                      'Quick Actions',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
+                    ),
+                    _buildRefreshButton(),
                   ],
                 ),
               ),
-              _buildRefreshButton(),
+              const SizedBox(height: 12),
+              _buildQuickActionCards(context),
+              const SizedBox(height: 24),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    _buildStatCardsGrid(),
+                    const SizedBox(height: 28),
+
+                    _buildSectionHeader(Icons.warning_amber_rounded, 'Live Alerts Preview', AppColors.severityHigh),
+                    const SizedBox(height: 12),
+                    _buildAlertsPreview(),
+                    const SizedBox(height: 28),
+
+                    _buildSectionHeader(Icons.rule_outlined, 'Active Rules', AppColors.primary),
+                    const SizedBox(height: 12),
+                    _buildRulesPreview(),
+                    const SizedBox(height: 28),
+
+                    _buildActivitySectionHeader(),
+                    const SizedBox(height: 12),
+                    _buildActivityFeedPreview(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 24),
+        ),
+      ),
+    );
+  }
 
-          // Stat Cards Grid
-          _buildStatCardsGrid(),
-          const SizedBox(height: 28),
-
-          // Alerts Preview
-          _buildSectionHeader(Icons.warning_amber_rounded, 'Live Alerts Preview', AppColors.severityHigh),
-          const SizedBox(height: 12),
-          _buildAlertsPreview(),
-          const SizedBox(height: 28),
-
-          // Rules Preview
-          _buildSectionHeader(Icons.rule_outlined, 'Active Rules', AppColors.primary),
-          const SizedBox(height: 12),
-          _buildRulesPreview(),
-          const SizedBox(height: 28),
-
-          // Activity Feed
-          _buildSectionHeader(
-              Icons.timeline_rounded, 'Live Activity Feed', AppColors.primary),
-          const SizedBox(height: 12),
-          _buildActivityFeed(),
+  Widget _buildHeroSection() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: AppColors.accent.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Admin Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+                  Text('Welcome, $_adminName', style: const TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCards(BuildContext context) {
+    final modules = [
+      _ModuleItem(
+        icon: Icons.map_rounded,
+        label: 'Live Map',
+        color: Colors.green,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen(userRole: 'admin'))),
+      ),
+      _ModuleItem(
+        icon: Icons.assignment,
+        label: 'Tasks',
+        color: Colors.blueAccent,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTasksScreen())),
+      ),
+      _ModuleItem(
+        icon: Icons.electric_scooter_rounded,
+        label: 'Fleet',
+        color: AppColors.accent,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFleetScreen())),
+      ),
+      _ModuleItem(
+        icon: Icons.people_alt_rounded,
+        label: 'Users',
+        color: Colors.purple,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: modules
+            .map((m) => Expanded(child: _buildActionCard(m)))
+            .toList()
+            .expand((w) => [w, const SizedBox(width: 10)])
+            .toList()
+          ..removeLast(),
+      ),
+    );
+  }
+
+  Widget _buildActionCard(_ModuleItem module) {
+    return GestureDetector(
+      onTap: module.onTap,
+      child: Container(
+        height: 76,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(module.icon, color: module.color, size: 24),
+            const SizedBox(height: 6),
+            Text(
+              module.label,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -158,13 +324,12 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
           _loadData();
         },
         child: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.divider),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(Icons.refresh_rounded,
-              color: AppColors.textSecondary, size: 20),
+          child: const Icon(Icons.refresh_rounded, color: AppColors.textSecondary, size: 18),
         ),
       ),
     );
@@ -181,7 +346,7 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: 14,
             crossAxisSpacing: 14,
-            mainAxisExtent: 110,
+            mainAxisExtent: 115,
           ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -284,7 +449,7 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
             children: [
               Text(value,
                   style: TextStyle(
-                      fontSize: isNarrow ? 20.0 : 24.0,
+                      fontSize: isNarrow ? 20.0 : 22.0,
                       fontWeight: FontWeight.w700,
                       color: highlight ? color : AppColors.textPrimary)),
               const SizedBox(height: 2),
@@ -341,7 +506,33 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
     );
   }
 
-  Widget _buildActivityFeed() {
+  Widget _buildActivitySectionHeader() {
+    return Row(
+      children: [
+        const Icon(Icons.timeline_rounded, color: AppColors.primary, size: 20),
+        const SizedBox(width: 8),
+        const Text('Activity Feed Preview',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary)),
+        const Spacer(),
+        TextButton(
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminActivityScreen()));
+          },
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('View All', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityFeedPreview() {
     if (_activityLog.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(40),
@@ -356,8 +547,7 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
               Icon(Icons.inbox_rounded, size: 40, color: AppColors.textLight),
               SizedBox(height: 12),
               Text('No activity yet',
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
             ],
           ),
         ),
@@ -431,7 +621,7 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('${alert.vehicleLabel} - ${alert.alertType}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
-                      Text(alert.message, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(Formatters.formatAlertMessage(alert.alertType, alert.message), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
@@ -494,13 +684,38 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(rule.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
-                      Text('${rule.ruleType} ${rule.conditionOperator} ${rule.conditionValue}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text(Formatters.formatRule(rule.ruleType, rule.conditionOperator, rule.conditionValue, rule.conditionUnit), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
                 Switch(
                   value: rule.isActive,
-                  onChanged: null,
+                  onChanged: (val) async {
+                    try {
+                      await ApiService.updateAlertRule(rule.id, {'is_active': val});
+                      setState(() {
+                        _rules[index] = AlertRule(
+                          id: rule.id,
+                          name: rule.name,
+                          description: rule.description,
+                          ruleType: rule.ruleType,
+                          severity: rule.severity,
+                          conditionOperator: rule.conditionOperator,
+                          conditionValue: rule.conditionValue,
+                          conditionUnit: rule.conditionUnit,
+                          isActive: val,
+                          notificationEmail: rule.notificationEmail,
+                          notificationPush: rule.notificationPush,
+                          notificationSms: rule.notificationSms,
+                          createdAt: rule.createdAt,
+                        );
+                      });
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update rule: $e'), backgroundColor: Colors.red));
+                      }
+                    }
+                  },
                   activeThumbColor: AppColors.accent,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -593,32 +808,19 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
 
   IconData _eventIcon(String eventType) {
     switch (eventType) {
-      case 'user_approved':
-        return Icons.check_circle_rounded;
-      case 'user_rejected':
-        return Icons.cancel_rounded;
-      case 'user_suspended':
-        return Icons.pause_circle_rounded;
-      case 'user_reactivated':
-        return Icons.play_circle_rounded;
-      case 'user_edited':
-        return Icons.edit_rounded;
-      case 'user_deleted':
-        return Icons.delete_rounded;
-      case 'clock_in':
-        return Icons.login_rounded;
-      case 'clock_out':
-        return Icons.logout_rounded;
-      case 'report_submitted':
-        return Icons.description_rounded;
-      case 'alert_acknowledged':
-        return Icons.notifications_active_rounded;
-      case 'vehicle_updated':
-        return Icons.electric_scooter_rounded;
-      case 'broadcast_sent':
-        return Icons.campaign_rounded;
-      default:
-        return Icons.info_rounded;
+      case 'user_approved': return Icons.check_circle_rounded;
+      case 'user_rejected': return Icons.cancel_rounded;
+      case 'user_suspended': return Icons.pause_circle_rounded;
+      case 'user_reactivated': return Icons.play_circle_rounded;
+      case 'user_edited': return Icons.edit_rounded;
+      case 'user_deleted': return Icons.delete_rounded;
+      case 'clock_in': return Icons.login_rounded;
+      case 'clock_out': return Icons.logout_rounded;
+      case 'report_submitted': return Icons.description_rounded;
+      case 'alert_acknowledged': return Icons.notifications_active_rounded;
+      case 'vehicle_updated': return Icons.electric_scooter_rounded;
+      case 'broadcast_sent': return Icons.campaign_rounded;
+      default: return Icons.info_rounded;
     }
   }
 
@@ -649,4 +851,13 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
         .map((w) => w[0].toUpperCase() + w.substring(1))
         .join(' ');
   }
+}
+
+class _ModuleItem {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  _ModuleItem({required this.icon, required this.label, required this.color, required this.onTap});
 }

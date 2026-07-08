@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
+import '../manager/manager_base_screen.dart';
+import '../trackman/trackman_base_screen.dart';
 import 'vehicle_registration_screen.dart';
 import 'vehicle_details_sheet.dart';
+import '../admin/admin_vehicle_detail_screen.dart';
 
 class VehicleRegistryScreen extends StatefulWidget {
   final String? initialStatusFilter;
-  const VehicleRegistryScreen({super.key, this.initialStatusFilter});
+  final String userRole;
+  const VehicleRegistryScreen({super.key, this.initialStatusFilter, this.userRole = 'admin'});
 
   @override
   State<VehicleRegistryScreen> createState() => _VehicleRegistryScreenState();
@@ -69,7 +75,6 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
         final matchSearch = q.isEmpty ||
             v.vehicleId.toLowerCase().contains(q) ||
             v.variant.toLowerCase().contains(q) ||
-            (v.departmentName?.toLowerCase().contains(q) ?? false) ||
             (v.assignedUserName?.toLowerCase().contains(q) ?? false);
         return matchStatus && matchVariant && matchSearch;
       }).toList();
@@ -78,50 +83,38 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vehicle Registry'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildHeader(),
-          _buildFilters(),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-                : _filtered.isEmpty
-                    ? _buildEmpty()
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        color: AppColors.accent,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filtered.length,
-                          itemBuilder: (ctx, i) => _VehicleListItem(
-                            vehicle: _filtered[i],
-                            onView: () => _showDetails(_filtered[i]),
-                            onEdit: () => _openEdit(_filtered[i]),
-                            onDelete: () => _confirmDelete(_filtered[i]),
-                          ),
+    final body = Column(
+      children: [
+        _buildHeader(),
+        _buildFilters(),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+              : _filtered.isEmpty
+                  ? _buildEmpty()
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      color: AppColors.accent,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filtered.length,
+                        itemBuilder: (ctx, i) => _VehicleListItem(
+                          vehicle: _filtered[i],
+                          onView: () => _showDetails(_filtered[i]),
+                          onEdit: () => _openEdit(_filtered[i]),
                         ),
                       ),
-          ),
-        ],
-      ),
+                    ),
+        ),
+      ],
     );
+
+    if (widget.userRole == 'manager') {
+      return ManagerBaseScreen(title: 'Vehicle Registry', body: body);
+    } else if (widget.userRole == 'trackman') {
+      return TrackmanBaseScreen(title: 'Vehicle Registry', body: body);
+    }
+    return AdminBaseScreen(title: 'Vehicle Registry', body: body);
   }
 
   Widget _buildHeader() {
@@ -159,7 +152,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
           TextField(
             controller: _searchCtrl,
             decoration: const InputDecoration(
-              hintText: 'Search vehicle ID, user, department...',
+              hintText: 'Search vehicle ID, user...',
               prefixIcon: Icon(Icons.search, color: AppColors.textLight, size: 20),
             ),
           ),
@@ -234,11 +227,11 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
   }
 
   void _showDetails(Vehicle v) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => VehicleDetailsSheet(vehicle: v),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminVehicleDetailScreen(vehicle: v),
+      ),
     );
   }
 
@@ -258,27 +251,7 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
     if (result == true) _load();
   }
 
-  Future<void> _confirmDelete(Vehicle v) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Vehicle'),
-        content: Text('Remove ${v.vehicleId} from the registry?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      await ApiService.deleteVehicle(v.id);
-      _load();
-    }
-  }
+
 
   Widget _pisolveTag() => Row(
     children: [
@@ -297,13 +270,11 @@ class _VehicleListItem extends StatelessWidget {
   final Vehicle vehicle;
   final VoidCallback onView;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const _VehicleListItem({
     required this.vehicle,
     required this.onView,
     required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -329,8 +300,6 @@ class _VehicleListItem extends StatelessWidget {
                 _IconAction(icon: Icons.visibility_outlined, onTap: onView),
                 const SizedBox(width: 8),
                 _IconAction(icon: Icons.edit_outlined, onTap: onEdit),
-                const SizedBox(width: 8),
-                _IconAction(icon: Icons.delete_outline, onTap: onDelete, color: AppColors.severityCritical),
               ],
             ),
             const SizedBox(height: 4),
@@ -339,14 +308,11 @@ class _VehicleListItem extends StatelessWidget {
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
             Text(vehicle.batteryCapacity, style: AppTextStyles.caption),
-            if (vehicle.departmentName != null || vehicle.assignedUserName != null) ...[
+            if (vehicle.assignedUserName != null) ...[
               const SizedBox(height: 8),
               const Divider(height: 1),
               const SizedBox(height: 8),
-              if (vehicle.departmentName != null)
-                _InfoRow(icon: Icons.business_outlined, text: vehicle.departmentName!),
-              if (vehicle.assignedUserName != null)
-                _InfoRow(icon: Icons.person_outline, text: vehicle.assignedUserName!),
+              _InfoRow(icon: Icons.person_outline, text: vehicle.assignedUserName!),
             ],
             const SizedBox(height: 8),
             Row(
@@ -389,7 +355,7 @@ class _IconAction extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color color;
-  const _IconAction({required this.icon, required this.onTap, this.color = AppColors.textSecondary});
+  const _IconAction({required this.icon, required this.onTap}) : color = AppColors.textSecondary;
 
   @override
   Widget build(BuildContext context) => GestureDetector(

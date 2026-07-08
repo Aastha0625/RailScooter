@@ -17,13 +17,12 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   late LatLng _selectedLocation;
-  late final MapController _mapController;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
     super.initState();
     _selectedLocation = widget.initialLocation;
-    _mapController = MapController();
   }
 
   @override
@@ -62,18 +61,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.pisolve.railscooter',
+                userAgentPackageName: 'com.piscoot.app',
               ),
               MarkerLayer(
                 markers: [
                   Marker(
                     point: _selectedLocation,
-                    width: 60,
-                    height: 60,
+                    width: 40,
+                    height: 40,
                     child: const Icon(
                       Icons.location_on,
-                      color: AppColors.severityCritical,
-                      size: 48,
+                      color: Colors.red,
+                      size: 40,
                     ),
                   ),
                 ],
@@ -109,13 +108,15 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        onPressed: () {
-          // Center back to the currently selected point
-          _mapController.move(_selectedLocation, 15.0);
-        },
-        child: const Icon(Icons.my_location, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 24.0),
+        child: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          onPressed: () {
+            _mapController.move(_selectedLocation, 15.0);
+          },
+          child: const Icon(Icons.my_location, color: Colors.white),
+        ),
       ),
     );
   }

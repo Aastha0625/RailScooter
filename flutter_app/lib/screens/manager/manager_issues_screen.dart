@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
+import '../../services/railway_routing_service.dart';
+import '../../widgets/custom_app_bar.dart';
+import 'manager_base_screen.dart';
 
 class ManagerIssuesScreen extends StatefulWidget {
   const ManagerIssuesScreen({super.key});
@@ -85,24 +88,8 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Issue Management', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return ManagerBaseScreen(
+      appBar: const CustomAppBar(title: 'Reported Issues'),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : _issues.isEmpty
@@ -206,48 +193,54 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
                           Expanded(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: FlutterMap(
-                                options: MapOptions(
-                                  initialCenter: LatLng(lat, lng),
-                                  initialZoom: 15.0,
-                                  interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
-                                ),
-                                children: [
-                                  TileLayer(
-                                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                    userAgentPackageName: 'com.pisolve.railscooter',
-                                  ),
-                                  MarkerLayer(
-                                    markers: [
-                                      Marker(
-                                        point: LatLng(lat, lng),
-                                        child: const Icon(Icons.location_on, color: Colors.red, size: 30),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                              child: _IssueMapWidget(lat: lat, lng: lng),
                             ),
                           ),
                         if (lat != null && lng != null && imageUrl != null) const SizedBox(width: 12),
-                        if (imageUrl != null)
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                imageUrl,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
+                          if (imageUrl != null)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          InteractiveViewer(
+                                            child: Image.network(imageUrl),
+                                          ),
+                                          Positioned(
+                                            top: -10,
+                                            right: -10,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                              onPressed: () => Navigator.pop(context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
                                 },
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: Colors.grey.shade200,
-                                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(child: CircularProgressIndicator());
+                                    },
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.grey.shade200,
+                                      child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                       ],
                     ),
                   ),
@@ -273,6 +266,149 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─── Issue mini-map with flutter_map + route polyline ────────────────────────
+
+class _IssueMapWidget extends StatefulWidget {
+  final double lat;
+  final double lng;
+  const _IssueMapWidget({required this.lat, required this.lng});
+
+  @override
+  State<_IssueMapWidget> createState() => _IssueMapWidgetState();
+}
+
+class _IssueMapWidgetState extends State<_IssueMapWidget> {
+  bool _loadingRoute = true;
+  RailwayRouteResult? _routeResult;
+  String? _errorMessage;
+  final MapController _mapController = MapController();
+
+  late LatLng _artLocation;
+  late LatLng _incidentLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _incidentLocation = LatLng(widget.lat, widget.lng);
+    // Dummy ART Train location to simulate routing
+    _artLocation = LatLng(widget.lat + 0.05, widget.lng + 0.05);
+    _fetchRoute();
+  }
+
+  Future<void> _fetchRoute() async {
+    final service = RailwayRoutingService();
+    final result = await service.getRoute(_artLocation, _incidentLocation);
+    if (mounted) {
+      setState(() {
+        _loadingRoute = false;
+        if (result != null && result.points.isNotEmpty) {
+          _routeResult = result;
+        } else {
+          _errorMessage = 'Could not calculate railway route.';
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final center = _routeResult?.snappedEnd ?? _incidentLocation;
+
+    return Stack(
+      children: [
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: center,
+            initialZoom: 12.0,
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.piscoot.app',
+            ),
+            if (_routeResult != null) ...[
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: _routeResult!.points,
+                    color: Colors.blueAccent,
+                    strokeWidth: 4.0,
+                  ),
+                ],
+              ),
+              MarkerLayer(
+                markers: [
+                  // Incident marker (Red)
+                  Marker(
+                    point: _routeResult!.snappedEnd,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                  // ART train marker (Blue)
+                  Marker(
+                    point: _routeResult!.snappedStart,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.train,
+                      color: Colors.blue,
+                      size: 36,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _incidentLocation,
+                    width: 40,
+                    height: 40,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+        if (_loadingRoute)
+          const Center(child: CircularProgressIndicator())
+        else if (_errorMessage != null)
+          Positioned(
+            bottom: 8, left: 8, right: 8,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)),
+              child: Text(_errorMessage!, style: const TextStyle(color: Colors.white, fontSize: 12), textAlign: TextAlign.center),
+            ),
+          )
+        else if (_routeResult != null)
+          Positioned(
+            top: 8, right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]),
+              child: Text(
+                '${(_routeResult!.distanceMeters / 1000).toStringAsFixed(1)} km • ${_routeResult!.etaMinutes.toStringAsFixed(0)} min',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

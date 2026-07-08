@@ -4,9 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:uuid/uuid.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/custom_app_bar.dart';
 import 'map_picker_screen.dart';
+import 'trackman_base_screen.dart';
+import '../../services/api_service.dart';
 
 class TrackmanReportIssueScreen extends StatefulWidget {
   const TrackmanReportIssueScreen({super.key});
@@ -137,6 +141,8 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
             .getPublicUrl(filePath);
       }
 
+      final trackmanData = await ApiService.fetchCurrentUserData();
+
       await Supabase.instance.client.from('trackman_issues').insert({
         'reporter_id': user.id,
         'vehicle_id': activeAssignment?['vehicle_id'],
@@ -147,6 +153,11 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
         'location_lat': _issueLocation!.latitude,
         'location_lng': _issueLocation!.longitude,
         'image_url': imageUrl,
+        'zone': trackmanData?.zone,
+        'division': trackmanData?.division,
+        'region': (trackmanData?.regions != null && trackmanData!.regions!.isNotEmpty) 
+            ? trackmanData.regions!.first 
+            : null,
       });
 
       if (mounted) {
@@ -180,13 +191,8 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Report an Issue'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-      ),
+    return TrackmanBaseScreen(
+      appBar: const CustomAppBar(title: 'Report Issue'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Form(

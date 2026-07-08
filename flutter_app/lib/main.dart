@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/welcome_screen.dart';
-import 'screens/admin/admin_shell.dart';
+import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/manager/manager_dashboard.dart';
 import 'screens/trackman/trackman_dashboard.dart';
 
@@ -128,17 +128,16 @@ class _RoleRouterState extends State<_RoleRouter> {
     }
 
     // Check approval status first
-    // (Bypassed for prototype so new users can log in immediately)
-    // if (_approvalStatus == 'pending') {
-    //   return _buildPendingScreen();
-    // }
-    // if (_approvalStatus == 'rejected') {
-    //   return _buildRejectedScreen();
-    // }
+    if (_approvalStatus == 'pending') {
+      return _buildPendingScreen();
+    }
+    if (_approvalStatus == 'rejected') {
+      return _buildRejectedScreen();
+    }
 
     // Approved — route by role
     if (_role == 'admin') {
-      return const AdminShell();
+      return const AdminDashboardScreen();
     } else if (_role == 'manager') {
       return const ManagerDashboardScreen();
     }

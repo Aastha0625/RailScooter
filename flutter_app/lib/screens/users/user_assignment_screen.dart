@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/user.dart';
-import '../../models/department.dart';
 import '../../models/vehicle.dart';
 import '../../services/api_service.dart';
 
@@ -16,7 +15,6 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
   List<AppUser> _users = [];
   List<Map<String, dynamic>> _assignments = [];
   List<Vehicle> _vehicles = [];
-  List<Department> _departments = [];
   bool _loading = true;
   String _searchQuery = '';
 
@@ -31,16 +29,14 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
     try {
       final results = await Future.wait([
         ApiService.fetchUsers(),
-        ApiService.fetchAssignments(),
         ApiService.fetchVehicles(),
-        ApiService.fetchDepartments(),
+        ApiService.fetchAssignments(),
       ]);
       if (mounted) {
         setState(() {
           _users = results[0] as List<AppUser>;
-          _assignments = results[1] as List<Map<String, dynamic>>;
-          _vehicles = results[2] as List<Vehicle>;
-          _departments = results[3] as List<Department>;
+          _vehicles = results[1] as List<Vehicle>;
+          _assignments = results[2] as List<Map<String, dynamic>>;
           _loading = false;
         });
       }
@@ -63,8 +59,7 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
     if (q.isEmpty) return _users;
     return _users.where((u) =>
       u.fullName.toLowerCase().contains(q) ||
-      (u.employeeId?.toLowerCase().contains(q) ?? false) ||
-      (u.departmentName?.toLowerCase().contains(q) ?? false)
+      (u.employeeId?.toLowerCase().contains(q) ?? false)
     ).toList();
   }
 
@@ -72,10 +67,13 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('User Assignment')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAssignUserToVehicle,
-        backgroundColor: AppColors.accent,
-        child: const Icon(Icons.person_add, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 24.0),
+        child: FloatingActionButton(
+          onPressed: _showAssignUserToVehicle,
+          backgroundColor: AppColors.accent,
+          child: const Icon(Icons.person_add, color: Colors.white),
+        ),
       ),
       body: Column(
         children: [
@@ -83,7 +81,7 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               decoration: const InputDecoration(
-                hintText: 'Search users by name, ID, department...',
+                hintText: 'Search users by name, ID...',
                 prefixIcon: Icon(Icons.search, color: AppColors.textLight, size: 20),
               ),
               onChanged: (v) => setState(() => _searchQuery = v),
@@ -130,7 +128,7 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +194,7 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,8 +311,6 @@ class _UserCard extends StatelessWidget {
                   Text(user.fullName, style: AppTextStyles.heading3),
                   if (user.employeeId != null)
                     Text('ID: ${user.employeeId}', style: AppTextStyles.caption),
-                  if (user.departmentName != null)
-                    Text(user.departmentName!, style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary)),
                 ],
               ),
             ),

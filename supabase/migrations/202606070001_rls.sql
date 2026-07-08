@@ -15,7 +15,7 @@ BEGIN
       split_part(NEW.email, '@', 1)
     ),
     CASE
-      WHEN EXISTS (SELECT 1 FROM public.app_users) THEN 'operator'
+      WHEN EXISTS (SELECT 1 FROM public.app_users) THEN 'trackman'
       ELSE 'admin'
     END,
     true
@@ -28,7 +28,7 @@ $$;
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM public.app_users WHERE role IN ('admin', 'supervisor')
+    SELECT 1 FROM public.app_users WHERE role IN ('admin', 'manager')
   ) THEN
     UPDATE public.app_users
     SET role = 'admin', updated_at = now()
@@ -66,7 +66,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT COALESCE(public.current_app_user_role() IN ('admin', 'supervisor'), false)
+  SELECT COALESCE(public.current_app_user_role() IN ('admin', 'manager'), false)
 $$;
 
 CREATE OR REPLACE FUNCTION public.can_access_vehicle(target_vehicle_id uuid)

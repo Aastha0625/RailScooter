@@ -4,9 +4,15 @@ import '../../theme/app_theme.dart';
 import '../../models/alert_rule.dart';
 import '../../models/vehicle_alert.dart';
 import '../../services/api_service.dart';
+import '../../utils/formatters.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
+import '../manager/manager_base_screen.dart';
+import '../trackman/trackman_base_screen.dart';
 
 class AlertsRulesScreen extends StatefulWidget {
-  const AlertsRulesScreen({super.key});
+  final String userRole;
+  const AlertsRulesScreen({super.key, this.userRole = 'admin'});
 
   @override
   State<AlertsRulesScreen> createState() => _AlertsRulesScreenState();
@@ -23,13 +29,21 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(_handleTabChange);
     _load();
   }
 
   @override
   void dispose() {
+    _tabs.removeListener(_handleTabChange);
     _tabs.dispose();
     super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _load() async {
@@ -64,66 +78,62 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
   Widget build(BuildContext context) {
     final unackCount = _events.where((e) => !e.isAcknowledged).length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Alerts & Rules'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain),
-              ),
+    final appBar = CustomAppBar(
+      title: 'Alerts & Rules',
+      bottom: TabBar(
+        controller: _tabs,
+        indicatorColor: AppColors.accent,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.white60,
+        tabs: [
+          const Tab(text: 'Rules'),
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Events'),
+                if (unackCount > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: AppColors.severityCritical,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text('$unackCount', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabs,
-          indicatorColor: AppColors.accent,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          tabs: [
-            const Tab(text: 'Rules'),
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Events'),
-                  if (unackCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.severityCritical,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text('$unackCount', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _tabs.index == 0 ? _showAddRule() : null,
-        backgroundColor: AppColors.accent,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : TabBarView(
-              controller: _tabs,
-              children: [
-                _buildRulesList(),
-                _buildEventsList(),
-              ],
-            ),
     );
+
+    final floatingActionButton = _tabs.index == 0
+        ? FloatingActionButton(
+            onPressed: _showAddRule,
+            backgroundColor: AppColors.accent,
+            child: const Icon(Icons.add, color: Colors.white),
+          )
+        : null;
+
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+        : TabBarView(
+            controller: _tabs,
+            children: [
+              _buildRulesList(),
+              _buildEventsList(),
+            ],
+          );
+
+    if (widget.userRole == 'manager') {
+      return ManagerBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
+    } else if (widget.userRole == 'trackman') {
+      return TrackmanBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
+    }
+    return AdminBaseScreen(appBar: appBar, body: body, floatingActionButton: floatingActionButton);
   }
 
   Widget _buildRulesList() {
@@ -149,7 +159,6 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
         itemBuilder: (_, i) => _RuleCard(
           rule: _rules[i],
           onEdit: () => _showEditRule(_rules[i]),
-          onDelete: () => _deleteRule(_rules[i]),
           onToggle: (v) => _toggleRule(_rules[i], v),
         ),
       ),
@@ -190,9 +199,7 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final descCtrl = TextEditingController(text: existing?.description ?? '');
     final valueCtrl = TextEditingController(text: existing?.conditionValue.toString() ?? '');
-    final unitCtrl = TextEditingController(text: existing?.conditionUnit ?? '');
     String ruleType = existing?.ruleType ?? 'speed';
-    String severity = existing?.severity ?? 'medium';
     String operator_ = existing?.conditionOperator ?? 'gt';
     bool emailNotif = existing?.notificationEmail ?? true;
     bool pushNotif = existing?.notificationPush ?? true;
@@ -209,7 +216,7 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 20),
           child: Form(
             key: formKey,
             child: SingleChildScrollView(
@@ -235,31 +242,33 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
                     children: [
                       Expanded(child: _enumDropdown('Rule Type', ruleType,
                         ['speed', 'battery', 'geofence', 'idle_time', 'movement'],
-                        (v) => setModal(() => ruleType = v!))),
-                      const SizedBox(width: 8),
-                      Expanded(child: _enumDropdown('Severity', severity,
-                        ['low', 'medium', 'high', 'critical'],
-                        (v) => setModal(() => severity = v!))),
+                        (v) => setModal(() => ruleType = v!),
+                        displayMap: {'speed': 'Speed', 'battery': 'Battery', 'geofence': 'Geofence', 'idle_time': 'Idle Time', 'movement': 'Movement'},
+                      )),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(child: _enumDropdown('Operator', operator_,
                         ['gt', 'lt', 'eq', 'gte', 'lte'],
-                        (v) => setModal(() => operator_ = v!))),
-                      const SizedBox(width: 8),
-                      Expanded(child: TextFormField(
-                        controller: valueCtrl,
-                        decoration: const InputDecoration(labelText: 'Value *'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                        (v) => setModal(() => operator_ = v!),
+                        displayMap: {'gt': '>', 'lt': '<', 'eq': '=', 'gte': '>=', 'lte': '<='},
                       )),
                       const SizedBox(width: 8),
-                      Expanded(child: TextFormField(
-                        controller: unitCtrl,
-                        decoration: const InputDecoration(labelText: 'Unit'),
-                      )),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          controller: valueCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Value *',
+                            suffixText: Formatters.getSiUnit(ruleType),
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v!.isEmpty ? 'Required' : null,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -277,10 +286,10 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
                           'name': nameCtrl.text.trim(),
                           'description': descCtrl.text.trim(),
                           'rule_type': ruleType,
-                          'severity': severity,
+                          'severity': 'medium', // Default
                           'condition_operator': operator_,
                           'condition_value': double.tryParse(valueCtrl.text) ?? 0,
-                          'condition_unit': unitCtrl.text.trim(),
+                          'condition_unit': Formatters.getSiUnit(ruleType),
                           'notification_email': emailNotif,
                           'notification_push': pushNotif,
                           'notification_sms': smsNotif,
@@ -309,31 +318,12 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
     _load();
   }
 
-  Future<void> _deleteRule(AlertRule rule) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Rule'),
-        content: Text('Delete "${rule.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) { await ApiService.deleteAlertRule(rule.id); _load(); }
-  }
-
   Future<void> _acknowledge(String id) async {
     await ApiService.acknowledgeAlert(id);
     _load();
   }
 
-  Widget _enumDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) =>
+  Widget _enumDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged, {Map<String, String>? displayMap}) =>
     Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -350,7 +340,10 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
             child: DropdownButton<String>(
               value: value,
               isExpanded: true,
-              items: items.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+              items: items.map((e) => DropdownMenuItem(
+                value: e,
+                child: Text(displayMap != null && displayMap.containsKey(e) ? displayMap[e]! : e, style: const TextStyle(fontSize: 12)),
+              )).toList(),
               onChanged: onChanged,
             ),
           ),
@@ -369,10 +362,9 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
 class _RuleCard extends StatelessWidget {
   final AlertRule rule;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
   final ValueChanged<bool> onToggle;
 
-  const _RuleCard({required this.rule, required this.onEdit, required this.onDelete, required this.onToggle});
+  const _RuleCard({required this.rule, required this.onEdit, required this.onToggle});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -406,13 +398,17 @@ class _RuleCard extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            _Tag(label: rule.ruleType, color: AppColors.primary),
-            const SizedBox(width: 6),
-            _Tag(label: '${rule.conditionOperator} ${rule.conditionValue} ${rule.conditionUnit}', color: AppColors.textSecondary),
-            const Spacer(),
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _Tag(label: rule.ruleType, color: AppColors.primary),
+                  _Tag(label: Formatters.formatRule(rule.ruleType, rule.conditionOperator, rule.conditionValue, rule.conditionUnit), color: AppColors.textSecondary),
+                ],
+              ),
+            ),
             IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: onEdit, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
-            const SizedBox(width: 8),
-            IconButton(icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.severityCritical), onPressed: onDelete, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
           ],
         ),
         if (rule.notificationEmail || rule.notificationPush || rule.notificationSms) ...[
@@ -470,8 +466,11 @@ class _AlertEventCard extends StatelessWidget {
                   _SeverityDot(severity: alert.severity),
                 ],
               ),
-              Text(alert.message.isNotEmpty ? alert.message : alert.alertType,
-                  style: AppTextStyles.bodySmall),
+              const SizedBox(height: 2),
+              Text(
+                Formatters.formatAlertMessage(alert.alertType, alert.message.isNotEmpty ? alert.message : alert.alertType),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+              ),
               const SizedBox(height: 2),
               Text(DateFormat('MMM d, HH:mm').format(alert.createdAt.toLocal()),
                   style: AppTextStyles.caption),

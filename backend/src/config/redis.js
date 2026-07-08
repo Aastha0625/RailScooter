@@ -7,9 +7,10 @@ function getRedis() {
     redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
       lazyConnect: true,
       maxRetriesPerRequest: 3,
+      enableOfflineQueue: false,
       retryStrategy: (times) => {
-        if (times > 3) return null;
-        return Math.min(times * 100, 3000);
+        // Reconnect every 3 seconds indefinitely
+        return 3000;
       },
     });
 

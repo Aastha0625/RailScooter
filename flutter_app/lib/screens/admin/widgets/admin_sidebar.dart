@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../theme/app_theme.dart';
+import '../admin_profile_screen.dart';
 
 class AdminNavItem {
   final IconData icon;
@@ -76,15 +77,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 22),
-                ),
+                Image.asset('assets/images/logo.png', height: 40),
                 const SizedBox(width: 12),
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,45 +104,71 @@ class _AdminSidebarState extends State<AdminSidebar> {
           ),
 
           // ── Admin User Footer ──
-          Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.accent,
-                  child: Text(
-                    _adminName.isNotEmpty ? _adminName[0].toUpperCase() : 'A',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminProfileScreen()),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.accent,
+                    child: Text(
+                      _adminName.isNotEmpty ? _adminName[0].toUpperCase() : 'A',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _adminName,
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                        overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _adminName,
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Text('Administrator',
+                            style: TextStyle(color: Colors.white54, fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 18),
+                    offset: const Offset(0, -80),
+                    onSelected: (value) async {
+                      if (value == 'profile') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AdminProfileScreen()),
+                        );
+                      } else if (value == 'logout') {
+                        await Supabase.instance.client.auth.signOut();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'profile',
+                        child: Text('View Profile', style: TextStyle(fontSize: 13)),
                       ),
-                      const Text('Administrator',
-                          style: TextStyle(color: Colors.white54, fontSize: 10)),
+                      const PopupMenuItem(
+                        value: 'logout',
+                        child: Text('Log Out', style: TextStyle(fontSize: 13, color: AppColors.severityCritical)),
+                      ),
                     ],
                   ),
-                ),
-                GestureDetector(
-                  onTap: () async {
-                    await Supabase.instance.client.auth.signOut();
-                  },
-                  child: const Icon(Icons.logout_rounded, color: Colors.white54, size: 18),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 8),

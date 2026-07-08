@@ -74,14 +74,9 @@ class VehicleDetailsSheet extends StatelessWidget {
                     if (vehicle.lastMaintenanceDate != null)
                       _detailRow('Last Maintenance', DateFormat('M/d/yyyy').format(vehicle.lastMaintenanceDate!)),
 
-                    if (vehicle.departmentName != null || vehicle.assignedUserName != null) ...[
-                      const SizedBox(height: 20),
-                      const Text('Assignment Details', style: AppTextStyles.heading3),
-                      const SizedBox(height: 12),
-                      if (vehicle.departmentName != null)
-                        _detailRow('Department', vehicle.departmentName!),
-                      if (vehicle.assignedUserName != null)
-                        _detailRow('Assigned User', vehicle.assignedUserName!),
+                    if (vehicle.assignedUserName != null) ...[
+                      const Divider(height: 24, color: AppColors.cardBorder),
+                      _detailRow('Assigned User', vehicle.assignedUserName!),
                     ],
 
                     const SizedBox(height: 20),

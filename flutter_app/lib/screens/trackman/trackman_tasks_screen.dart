@@ -1,201 +1,213 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
+import 'trackman_task_details_screen.dart';
+import '../../widgets/custom_app_bar.dart';
+import 'trackman_base_screen.dart';
 
-class TrackmanTasksScreen extends StatelessWidget {
+class TrackmanTasksScreen extends StatefulWidget {
   const TrackmanTasksScreen({super.key});
 
   @override
+  State<TrackmanTasksScreen> createState() => _TrackmanTasksScreenState();
+}
+
+class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
+  List<Map<String, dynamic>> _tasks = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    setState(() => _loading = true);
+    try {
+      final user = await ApiService.fetchCurrentUserData();
+      if (user == null) throw Exception('Not logged in');
+      
+      final tasks = await ApiService.fetchTasks(
+        assignedToUserId: user.id,
+        regions: user.regions,
+      );
+      if (mounted) {
+        setState(() {
+          _tasks = tasks;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load tasks: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final tasks = [
-      {
-        "title": "Track Inspection",
-        "location": "Western Line - Section A2",
-        "time": "Today • 04:00 PM",
-        "priority": "High",
-        "status": "Pending",
-        "icon": Icons.search,
-        "color": Colors.red,
-      },
-      {
-        "title": "Replace Track Sensor",
-        "location": "Junction 4",
-        "time": "Tomorrow • 10:00 AM",
-        "priority": "Medium",
-        "status": "In Progress",
-        "icon": Icons.build,
-        "color": Colors.orange,
-      },
-      {
-        "title": "Rail Alignment Check",
-        "location": "Eastern Sector C",
-        "time": "22 June • 09:00 AM",
-        "priority": "Low",
-        "status": "Assigned",
-        "icon": Icons.engineering,
-        "color": Colors.green,
-      },
-    ];
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        title: const Text(
-          "My Tasks",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView.builder(
-          itemCount: tasks.length,
-          itemBuilder: (context, index) {
-            final task = tasks[index];
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: AppColors.cardBorder,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
+    return TrackmanBaseScreen(
+      appBar: const CustomAppBar(title: "My Tasks"),
+      body: RefreshIndicator(
+        onRefresh: _loadTasks,
+        color: AppColors.primary,
+        child: _loading 
+          ? const Center(child: CircularProgressIndicator())
+          : _tasks.isEmpty 
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 100),
+                  Center(child: Text("No tasks assigned yet.", style: TextStyle(fontSize: 16, color: AppColors.textLight))),
                 ],
-              ),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(16),
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: _tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = _tasks[index];
+                    
+                    String formattedTime = "Unknown Time";
+                    if (task['scheduled_time'] != null) {
+                      final dt = DateTime.parse(task['scheduled_time']).toLocal();
+                      formattedTime = DateFormat('MMM dd, yyyy • hh:mm a').format(dt);
+                    }
 
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    backgroundColor:
-                        (task["color"] as Color).withValues(alpha: 0.15),
-                    radius: 26,
-                    child: Icon(
-                      task["icon"] as IconData,
-                      color: task["color"] as Color,
-                      size: 26,
-                    ),
-                  ),
+                    Color pColor = Colors.orange;
+                    if (task['priority'] == 'High') pColor = Colors.red;
+                    if (task['priority'] == 'Low') pColor = Colors.green;
 
-                  const SizedBox(width: 16),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task["title"] as String,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                    return GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TrackmanTaskDetailsScreen(task: Map<String, dynamic>.from(task)),
                           ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          task["location"] as String,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          task["time"] as String,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        Row(
-                          children: [
-                            _buildChip(
-                              task["priority"] as String,
-                              task["color"] as Color,
-                            ),
-
-                            const SizedBox(width: 8),
-
-                            _buildStatusChip(
-                              task["status"] as String,
+                        );
+                        if (result == true) {
+                          _loadTasks();
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: AppColors.cardBorder),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: pColor.withValues(alpha: 0.15),
+                              radius: 26,
+                              child: Icon(
+                                Icons.build,
+                                color: pColor,
+                                size: 26,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    task["title"] ?? 'Unknown Task',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    task["location"] ?? 'Unknown Location',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    formattedTime,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: pColor.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          task["priority"] ?? 'Normal',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: pColor,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          task["status"] ?? 'Assigned',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: AppColors.textLight,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildChip(
-    String text,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildStatusChip(
-    String status,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status,
-        style: const TextStyle(
-          color: AppColors.accent,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
       ),
     );
   }

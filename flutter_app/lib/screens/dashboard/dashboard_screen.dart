@@ -3,13 +3,13 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../vehicles/vehicle_registry_screen.dart';
-import '../departments/department_assignment_screen.dart';
 import '../users/user_assignment_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
 import '../tracking/geofence_tracking_screen.dart';
 import '../../services/api_service.dart';
 import '../../models/alert_rule.dart';
 import '../../models/vehicle_alert.dart';
+import '../../utils/formatters.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -167,7 +167,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _ModuleItem(icon: Icons.shield_outlined, label: 'Alerts', color: AppColors.severityHigh, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen()))),
       _ModuleItem(icon: Icons.directions_car_outlined, label: 'Vehicles', color: AppColors.accent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen()))),
       _ModuleItem(icon: Icons.people_outline, label: 'Users', color: AppColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserAssignmentScreen()))),
-      _ModuleItem(icon: Icons.business_outlined, label: 'Depts', color: AppColors.statusIdle, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentAssignmentScreen()))),
     ];
 
     return SizedBox(
@@ -396,7 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${alert.vehicleLabel} - ${alert.alertType}', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
-                Text(alert.message, style: AppTextStyles.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(Formatters.formatAlertMessage(alert.alertType, alert.message), style: AppTextStyles.caption),
               ],
             ),
           ),
@@ -428,7 +427,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(rule.name, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
-                Text('${rule.ruleType} ${rule.conditionOperator} ${rule.conditionValue}', style: AppTextStyles.caption),
+                Text(Formatters.formatRule(rule.ruleType, rule.conditionOperator, rule.conditionValue, rule.conditionUnit), style: AppTextStyles.caption),
               ],
             ),
           ),
@@ -483,8 +482,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _drawerItem(context, Icons.dashboard_outlined, 'Dashboard', () => Navigator.pop(context)),
           _drawerItem(context, Icons.electric_scooter_outlined, 'Vehicle Registry',
               () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen())); }),
-          _drawerItem(context, Icons.business_outlined, 'Departments',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentAssignmentScreen())); }),
           _drawerItem(context, Icons.people_outline, 'User Assignment',
               () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const UserAssignmentScreen())); }),
           _drawerItem(context, Icons.notifications_outlined, 'Alerts & Rules',

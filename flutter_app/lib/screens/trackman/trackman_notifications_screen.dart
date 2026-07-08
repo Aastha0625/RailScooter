@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 
 class TrackmanNotificationsScreen extends StatefulWidget {
@@ -19,6 +20,12 @@ class _TrackmanNotificationsScreenState
   void initState() {
     super.initState();
     _loadNotifications();
+    _saveReadTime();
+  }
+
+  Future<void> _saveReadTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_notification_read_time', DateTime.now().toIso8601String());
   }
 
   Future<void> _loadNotifications() async {

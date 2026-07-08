@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/custom_app_bar.dart';
+import 'manager_base_screen.dart';
 
 class ManagerDispatchHistoryScreen extends StatefulWidget {
   const ManagerDispatchHistoryScreen({super.key});
@@ -49,13 +51,8 @@ class _ManagerDispatchHistoryScreenState extends State<ManagerDispatchHistoryScr
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Dispatch History', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-      ),
+    return ManagerBaseScreen(
+      appBar: const CustomAppBar(title: 'Dispatch History'),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : _history.isEmpty

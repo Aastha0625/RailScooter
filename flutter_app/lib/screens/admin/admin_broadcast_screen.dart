@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../services/api_service.dart';
+import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
+import 'admin_base_screen.dart';
 
-class AdminBroadcastTab extends StatefulWidget {
-  const AdminBroadcastTab({super.key});
+class AdminBroadcastScreen extends StatefulWidget {
+  const AdminBroadcastScreen({super.key});
 
   @override
-  State<AdminBroadcastTab> createState() => _AdminBroadcastTabState();
+  State<AdminBroadcastScreen> createState() => _AdminBroadcastScreenState();
 }
 
-class _AdminBroadcastTabState extends State<AdminBroadcastTab> {
+class _AdminBroadcastScreenState extends State<AdminBroadcastScreen> {
   final _titleCtrl   = TextEditingController();
   final _bodyCtrl    = TextEditingController();
   String _targetRole = 'all';
@@ -59,12 +60,13 @@ class _AdminBroadcastTabState extends State<AdminBroadcastTab> {
       );
       await ApiService.logActivity(
         eventType: 'broadcast_sent',
-        description: 'Broadcast "${_titleCtrl.text.trim()}" sent to $_targetRole',
+        description: 'Sent broadcast "${_titleCtrl.text.trim()}" to $_targetRole',
       );
-      _titleCtrl.clear();
-      _bodyCtrl.clear();
-      setState(() => _previewing = false);
       if (mounted) {
+        _titleCtrl.clear();
+        _bodyCtrl.clear();
+        setState(() => _targetRole = 'all');
+        setState(() => _previewing = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Broadcast sent successfully!'),
@@ -86,8 +88,8 @@ class _AdminBroadcastTabState extends State<AdminBroadcastTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return AdminBaseScreen(
+      title: 'Broadcast Messages',
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildTopBar()),
@@ -136,8 +138,8 @@ class _AdminBroadcastTabState extends State<AdminBroadcastTab> {
 
   Widget _buildTopBar() {
     return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
+      padding: const EdgeInsets.only(
+        top: 16,
         left: 20, right: 20, bottom: 16,
       ),
       color: AppColors.primary,

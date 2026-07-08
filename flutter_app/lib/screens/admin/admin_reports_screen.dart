@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../models/vehicle_alert.dart';
-import '../../../services/api_service.dart';
+import '../../theme/app_theme.dart';
+import '../../models/vehicle_alert.dart';
+import '../../services/api_service.dart';
+import '../../utils/formatters.dart';
+import 'admin_base_screen.dart';
 
-class AdminReportsTab extends StatefulWidget {
-  const AdminReportsTab({super.key});
+class AdminReportsScreen extends StatefulWidget {
+  const AdminReportsScreen({super.key});
 
   @override
-  State<AdminReportsTab> createState() => _AdminReportsTabState();
+  State<AdminReportsScreen> createState() => _AdminReportsScreenState();
 }
 
-class _AdminReportsTabState extends State<AdminReportsTab> {
+class _AdminReportsScreenState extends State<AdminReportsScreen> {
   List<VehicleAlert> _alerts = [];
   bool _loading = true;
   bool _showOnlyUnack = false;
@@ -50,8 +52,8 @@ class _AdminReportsTabState extends State<AdminReportsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return AdminBaseScreen(
+      title: 'Incident Reports',
       body: Column(
         children: [
           _buildTopBar(),
@@ -91,8 +93,8 @@ class _AdminReportsTabState extends State<AdminReportsTab> {
   Widget _buildTopBar() {
     final unackCount = _alerts.where((a) => !a.isAcknowledged).length;
     return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
+      padding: const EdgeInsets.only(
+        top: 16,
         left: 20, right: 20, bottom: 16,
       ),
       color: AppColors.primary,
@@ -233,8 +235,8 @@ class _AlertCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(alert.message.isEmpty ? alert.alertType : alert.message,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      Text(Formatters.formatAlertMessage(alert.alertType, alert.message.isEmpty ? alert.alertType : alert.message),
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
                       Text('Vehicle: ${alert.vehicleId.substring(0, 8)}...',
                           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                     ],

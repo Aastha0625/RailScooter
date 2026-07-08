@@ -19,7 +19,6 @@ router.get('/', async (req, res) => {
       *,
       vehicle_assignments(
         id, is_active, assigned_at,
-        departments(id, name, code),
         app_users!vehicle_assignments_assigned_user_id_fkey(id, full_name, employee_id)
       )
     `, { count: 'exact' }).order('created_at', { ascending: false });
@@ -41,6 +40,7 @@ router.get('/', async (req, res) => {
 
     res.json(result);
   } catch (err) {
+    console.error("VEHICLES API ERROR:", err.stack || err.message || err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -54,7 +54,6 @@ router.get('/:id', async (req, res) => {
         *,
         vehicle_assignments(
           id, is_active, assigned_at, notes,
-          departments(id, name, code, location),
           app_users!vehicle_assignments_assigned_user_id_fkey(id, full_name, employee_id, role, phone)
         ),
         vehicle_tracking(latitude, longitude, speed_kmh, battery_percent, recorded_at)

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/custom_app_bar.dart';
+import 'trackman_base_screen.dart';
 
 class TrackmanSafetyScreen extends StatefulWidget {
   const TrackmanSafetyScreen({super.key});
@@ -21,13 +25,8 @@ class _TrackmanSafetyScreenState extends State<TrackmanSafetyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Safety Guidelines'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-      ),
+    return TrackmanBaseScreen(
+      appBar: const CustomAppBar(title: 'Safety Guidelines'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -105,25 +104,26 @@ class _TrackmanSafetyScreenState extends State<TrackmanSafetyScreen> {
               height: 56,
               child: ElevatedButton(
                 onPressed: _allChecked
-                    ? () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Safety checks confirmed! You are ready to ride.'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        Navigator.pop(context); // Go back to dashboard
+                    ? () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        final uid = Supabase.instance.client.auth.currentUser?.id;
+                        if (uid != null) {
+                          await prefs.setBool('safety_checked_$uid', true);
+                        }
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Safety verification complete! Run authorized.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+                          );
+                          Navigator.pop(context, true);
+                        }
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  disabledBackgroundColor: AppColors.textLight,
                 ),
-                child: Text(
-                  'Confirm & Start',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _allChecked ? Colors.white : Colors.grey.shade500),
-                ),
+                child: const Text('Verify & Authorize Run', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

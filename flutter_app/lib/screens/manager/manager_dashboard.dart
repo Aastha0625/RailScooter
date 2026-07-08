@@ -3,11 +3,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../vehicles/vehicle_registry_screen.dart';
-import '../tracking/geofence_tracking_screen.dart';
 import 'manager_dispatch_screen.dart';
 import 'manager_issues_screen.dart';
-import 'manager_dispatch_history_screen.dart';
+import '../manager/manager_dispatch_history_screen.dart';
 import '../../services/api_service.dart';
+import 'manager_base_screen.dart';
+import 'manager_task_assignment_screen.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -63,29 +64,8 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Operations Hub', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  height: 32,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      drawer: _buildDrawer(context),
+    return ManagerBaseScreen(
+      title: 'Operations Hub',
       body: RefreshIndicator(
         onRefresh: _loadStats,
         color: AppColors.accent,
@@ -161,20 +141,21 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
   Widget _buildQuickActionCards(BuildContext context) {
     final modules = [
+      _ModuleItem(icon: Icons.assignment_add, label: 'Assign Task', color: Colors.blueAccent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerTaskAssignmentScreen()))),
       _ModuleItem(icon: Icons.send_rounded, label: 'Dispatch', color: Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerDispatchScreen()))),
       _ModuleItem(icon: Icons.report_problem, label: 'Issues', color: AppColors.severityHigh, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerIssuesScreen()))),
-      _ModuleItem(icon: Icons.map_outlined, label: 'Tracking', color: AppColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen()))),
       _ModuleItem(icon: Icons.directions_car_outlined, label: 'Vehicles', color: AppColors.accent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen()))),
     ];
 
-    return SizedBox(
-      height: 75,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: modules.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, i) => _buildActionCard(modules[i]),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: modules
+            .map((m) => Expanded(child: _buildActionCard(m)))
+            .toList()
+            .expand((w) => [w, const SizedBox(width: 10)])
+            .toList()
+          ..removeLast(),
       ),
     );
   }
@@ -183,7 +164,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     return GestureDetector(
       onTap: module.onTap,
       child: Container(
-        width: 72,
+        height: 80,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -195,9 +176,15 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(module.icon, color: module.color, size: 24),
+            Icon(module.icon, color: module.color, size: 26),
             const SizedBox(height: 6),
-            Text(module.label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary)),
+            Text(
+              module.label,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
@@ -426,62 +413,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
-            child: Row(
-              children: [
-                Transform.scale(
-                  scale: 2.5,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 48,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(width: 24),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-                    Text('Manager Operations', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          _drawerItem(context, Icons.dashboard_outlined, 'Operations Hub', () => Navigator.pop(context)),
-          _drawerItem(context, Icons.send_rounded, 'Dispatch Vehicles',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerDispatchScreen())); }),
-          _drawerItem(context, Icons.report_problem_outlined, 'Issue Management',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerIssuesScreen())); }),
-          _drawerItem(context, Icons.map_outlined, 'Fleet Tracking',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen())); }),
-          _drawerItem(context, Icons.electric_scooter_outlined, 'Vehicle Status',
-              () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen())); }),
-          const Spacer(),
-          const Divider(height: 1),
-          _drawerItem(context, Icons.logout_rounded, 'Log Out', () async {
-            Navigator.pop(context);
-            await Supabase.instance.client.auth.signOut();
-          }),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _drawerItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 22),
-      title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-      onTap: onTap,
-    );
-  }
 }
 
 class _ModuleItem {

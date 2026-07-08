@@ -15,8 +15,7 @@ class TrackmanProfileScreen extends StatelessWidget {
     final data = await Supabase.instance.client
         .from('app_users')
         .select('''
-          *,
-          departments(name)
+          id, full_name, employee_id, phone, role, is_active, created_at, approval_status, gender, zone, division, regions
         ''')
         .eq('id', user.id)
         .single();
@@ -131,9 +130,27 @@ class TrackmanProfileScreen extends StatelessWidget {
                   ),
 
                   _buildInfoTile(
-                    Icons.apartment,
-                    'Department',
-                    user['departments']?['name'] ?? 'Not Assigned',
+                    Icons.people_outline,
+                    'Gender',
+                    user['gender'] ?? 'Not Specified',
+                  ),
+
+                  _buildInfoTile(
+                    Icons.map_outlined,
+                    'Zone',
+                    user['zone'] ?? 'Not Assigned',
+                  ),
+
+                  _buildInfoTile(
+                    Icons.business_outlined,
+                    'Division',
+                    user['division'] ?? 'Not Assigned',
+                  ),
+
+                  _buildInfoTile(
+                    Icons.location_city_outlined,
+                    'Regions',
+                    (user['regions'] as List<dynamic>?)?.join(', ') ?? 'Not Assigned',
                   ),
 
                   _buildInfoTile(

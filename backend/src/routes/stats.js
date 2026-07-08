@@ -13,13 +13,11 @@ router.get('/', async (req, res) => {
       const cached = await redis.get(cacheKey);
       if (cached) return res.json(JSON.parse(cached));
     } catch (_) {}
-
-    const [vehicles, departments, users, alerts, activeAssignments] = await Promise.all([
+    const [vehicles, users, alerts, activeAssignments] = await Promise.all([
       supabase.from('vehicles').select('status', { count: 'exact' }),
-      supabase.from('departments').select('id', { count: 'exact' }).eq('is_active', true),
-      supabase.from('app_users').select('id', { count: 'exact' }).eq('is_active', true),
-      supabase.from('vehicle_alerts').select('id', { count: 'exact' }).eq('is_acknowledged', false),
-      supabase.from('vehicle_assignments').select('id', { count: 'exact' }).eq('is_active', true),
+      supabase.from('app_users').select('*', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('vehicle_alerts').select('*', { count: 'exact', head: true }).eq('is_acknowledged', false),
+      supabase.from('vehicle_assignments').select('*', { count: 'exact', head: true }).eq('is_active', true),
     ]);
 
     const vehicleData = vehicles.data || [];
@@ -34,7 +32,7 @@ router.get('/', async (req, res) => {
       idle_vehicles: byStatus.idle || 0,
       maintenance_vehicles: byStatus.maintenance || 0,
       offline_vehicles: byStatus.offline || 0,
-      total_departments: departments.count || 0,
+      total_departments: 0,
       total_users: users.count || 0,
       unacknowledged_alerts: alerts.count || 0,
       active_assignments: activeAssignments.count || 0,

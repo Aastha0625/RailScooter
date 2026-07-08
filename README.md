@@ -200,14 +200,6 @@ PORT=3000
 JWT_SECRET=piscoot_jwt_secret_2024
 ```
 
-### Flutter App
-Hardcoded in `lib/main.dart` (same Supabase project):
-```dart
-await Supabase.initialize(
-  url: 'https://mskizgdxpcuuqzjlblou.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1za2l6Z2R4cGN1dXF6amxibG91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDk0NzgsImV4cCI6MjA5NjQ4NTQ3OH0.gwAKQFhfeLMLUh4I1L4UUORv8hVQ1HzNvLTGQvs4ib4',
-);
-```
 
 Flutter uses Supabase directly only for authentication. Fleet data requests go
 through the Express backend and include the current Supabase access token.
