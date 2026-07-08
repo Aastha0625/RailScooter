@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../theme/app_theme.dart';
 import '../../services/railway_routing_service.dart';
 import '../../widgets/custom_app_bar.dart';
@@ -191,9 +192,43 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
                       children: [
                         if (lat != null && lng != null)
                           Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: _IssueMapWidget(lat: lat, lng: lng),
+                            child: GestureDetector(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => Dialog(
+                                    insetPadding: const EdgeInsets.all(16),
+                                    backgroundColor: Colors.transparent,
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: SizedBox(
+                                            width: double.infinity,
+                                            height: MediaQuery.of(context).size.height * 0.7,
+                                            child: _IssueMapWidget(lat: lat, lng: lng),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: -10,
+                                          right: -10,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                            onPressed: () => Navigator.pop(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: IgnorePointer(
+                                  child: _IssueMapWidget(lat: lat, lng: lng),
+                                ),
+                              ),
                             ),
                           ),
                         if (lat != null && lng != null && imageUrl != null) const SizedBox(width: 12),
@@ -294,12 +329,27 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
   void initState() {
     super.initState();
     _incidentLocation = LatLng(widget.lat, widget.lng);
-    // Dummy ART Train location to simulate routing
-    _artLocation = LatLng(widget.lat + 0.05, widget.lng + 0.05);
     _fetchRoute();
   }
 
   Future<void> _fetchRoute() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      
+      if (serviceEnabled && (permission == LocationPermission.whileInUse || permission == LocationPermission.always)) {
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        _artLocation = LatLng(position.latitude, position.longitude);
+      } else {
+        _artLocation = const LatLng(28.6139, 77.2090); // Fallback to HQ
+      }
+    } catch (e) {
+      _artLocation = const LatLng(28.6139, 77.2090);
+    }
+
     final service = RailwayRoutingService();
     final result = await service.getRoute(_artLocation, _incidentLocation);
     if (mounted) {

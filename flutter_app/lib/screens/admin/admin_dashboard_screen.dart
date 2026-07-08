@@ -228,12 +228,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Admin Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-                  Text('Welcome, $_adminName', style: const TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Admin Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+                    Text('Welcome, $_adminName', style: const TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                  ],
+                ),
               ),
             ],
           ),
@@ -272,13 +274,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: modules
-            .map((m) => Expanded(child: _buildActionCard(m)))
-            .toList()
-            .expand((w) => [w, const SizedBox(width: 10)])
-            .toList()
-          ..removeLast(),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: modules.map((m) => SizedBox(
+          width: (MediaQuery.of(context).size.width - 48 - (12 * 3)) / 4 < 70 
+              ? (MediaQuery.of(context).size.width - 48 - 12) / 2 // Fallback to 2 per row on very small screens
+              : (MediaQuery.of(context).size.width - 48 - (12 * 3)) / 4,
+          child: _buildActionCard(m),
+        )).toList(),
       ),
     );
   }

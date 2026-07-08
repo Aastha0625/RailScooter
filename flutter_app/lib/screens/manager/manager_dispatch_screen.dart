@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../models/user.dart';
+import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'manager_base_screen.dart';
@@ -308,7 +310,7 @@ void initState() {
                       fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
                     ),
-                    items: _availableTrackmen.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.fullName))).toList(),
+                    items: _availableTrackmen.map<DropdownMenuItem<String>>((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.fullName))).toList(),
                     onChanged: (val) {
                       if (val != null) setState(() => _selectedTrackmanId = val);
                     },

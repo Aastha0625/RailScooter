@@ -125,13 +125,15 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 child: const Icon(Icons.assignment_ind, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Manager Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-                  Text('Dispatch & Monitoring', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500)),
-                ],
-              ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Manager Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
+                      const Text('Central Railway', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
             ],
           ),
         ],
@@ -149,13 +151,15 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: modules
-            .map((m) => Expanded(child: _buildActionCard(m)))
-            .toList()
-            .expand((w) => [w, const SizedBox(width: 10)])
-            .toList()
-          ..removeLast(),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: modules.map((m) => SizedBox(
+          width: (MediaQuery.of(context).size.width - 32 - (12 * 3)) / 4 < 70 
+              ? (MediaQuery.of(context).size.width - 32 - 12) / 2
+              : (MediaQuery.of(context).size.width - 32 - (12 * 3)) / 4,
+          child: _buildActionCard(m),
+        )).toList(),
       ),
     );
   }
