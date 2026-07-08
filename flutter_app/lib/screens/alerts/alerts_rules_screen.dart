@@ -57,6 +57,49 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
         setState(() {
           _rules = results[0] as List<AlertRule>;
           _events = results[1] as List<VehicleAlert>;
+
+          // Add dummy data for presentation purposes if list is empty
+          if (_events.isEmpty) {
+            _events = [
+              VehicleAlert(
+                id: 'dummy1',
+                vehicleId: 'v1',
+                vehicleLabel: 'V-001 (Scooter)',
+                alertType: 'speed',
+                severity: 'high',
+                message: 'Vehicle exceeded speed limit of 25km/h in Zone A',
+                latitude: 28.6139,
+                longitude: 77.2090,
+                isAcknowledged: false,
+                createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
+              ),
+              VehicleAlert(
+                id: 'dummy2',
+                vehicleId: 'v2',
+                vehicleLabel: 'V-002 (Scooter)',
+                alertType: 'geofence',
+                severity: 'critical',
+                message: 'Vehicle entered Restricted Zone',
+                latitude: 28.6140,
+                longitude: 77.2100,
+                isAcknowledged: false,
+                createdAt: DateTime.now().subtract(const Duration(minutes: 45)),
+              ),
+              VehicleAlert(
+                id: 'dummy3',
+                vehicleId: 'v3',
+                vehicleLabel: 'V-003 (Moped)',
+                alertType: 'battery',
+                severity: 'medium',
+                message: 'Battery level critically low (12%)',
+                latitude: 28.6120,
+                longitude: 77.2050,
+                isAcknowledged: true,
+                createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+              ),
+            ];
+          }
+
           _loading = false;
         });
       }
