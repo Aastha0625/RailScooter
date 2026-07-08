@@ -58,11 +58,12 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
           ''')
           .eq('assigned_user_id', user.id)
           .eq('is_active', true)
-          .maybeSingle();
+          .order('created_at', ascending: false)
+          .limit(1);
 
       Map<String, dynamic>? assignmentData;
-      if (data != null) {
-        assignmentData = Map<String, dynamic>.from(data);
+      if (data.isNotEmpty) {
+        assignmentData = Map<String, dynamic>.from(data.first);
         final vehicleMap = assignmentData['vehicles'];
         if (vehicleMap != null && vehicleMap['id'] != null) {
           final trackingData = await Supabase.instance.client

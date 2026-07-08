@@ -12,6 +12,7 @@ import '../vehicles/vehicle_registry_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
 import 'manager_profile_screen.dart';
 import 'manager_task_assignment_screen.dart';
+import 'manager_tasks_screen.dart';
 
 class ManagerBaseScreen extends StatefulWidget {
   final String? title;
@@ -68,6 +69,11 @@ class _ManagerBaseScreenState extends State<ManagerBaseScreen> {
         icon: Icons.assignment_add,
         label: 'Assign Task',
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerTaskAssignmentScreen())),
+      ),
+      SidebarItem(
+        icon: Icons.assignment_outlined,
+        label: 'Assigned Tasks',
+        onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagerTasksScreen())),
       ),
       SidebarItem(
         icon: Icons.send_rounded,

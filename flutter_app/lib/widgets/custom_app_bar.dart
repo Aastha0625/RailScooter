@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
+import '../main.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -53,13 +54,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   ),
                 );
-                if (confirm == true) {
-                  if (context.mounted) {
-                    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+                  if (confirm == true) {
+                    Supabase.instance.client.auth.signOut();
+                    if (context.mounted) {
+                      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const AuthGate()),
+                        (route) => false,
+                      );
+                    }
                   }
-                  // Run sign out without awaiting so UI doesn't hang on bad network
-                  Supabase.instance.client.auth.signOut();
-                }
               }
             },
             itemBuilder: (context) => [

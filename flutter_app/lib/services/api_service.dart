@@ -249,7 +249,10 @@ class ApiService {
   // -------- ASSIGNMENTS --------
 
   static Future<List<Map<String, dynamic>>> fetchAssignments() async {
-    return _list(await _request('GET', '/assignments')).map(_map).toList();
+    final data = await _sb
+        .from('vehicle_assignments')
+        .select('*');
+    return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
   }
 
   static Future<void> createAssignment({
