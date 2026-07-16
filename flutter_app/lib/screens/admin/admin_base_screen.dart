@@ -11,6 +11,8 @@ import 'admin_reports_screen.dart';
 import 'admin_broadcast_screen.dart';
 import 'admin_tasks_screen.dart';
 import 'admin_activity_screen.dart';
+import 'admin_analytics_screen.dart';
+import '../manager/manager_dispatch_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'admin_profile_screen.dart';
@@ -114,6 +116,11 @@ class _AdminBaseScreenState extends State<AdminBaseScreen> {
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
       ),
       SidebarItem(
+        icon: Icons.send_rounded,
+        label: 'Dispatch Operations',
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerDispatchScreen(userRole: 'admin'))),
+      ),
+      SidebarItem(
         icon: Icons.electric_scooter_rounded,
         label: 'Fleet',
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFleetScreen())),
@@ -122,6 +129,11 @@ class _AdminBaseScreenState extends State<AdminBaseScreen> {
         icon: Icons.rule_outlined,
         label: 'Rules & Alerts',
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen(userRole: 'admin'))),
+      ),
+      SidebarItem(
+        icon: Icons.analytics_outlined,
+        label: 'Analytics',
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAnalyticsScreen())),
       ),
       SidebarItem(
         icon: Icons.report_problem_rounded,

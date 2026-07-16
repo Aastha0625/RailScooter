@@ -6,7 +6,8 @@ import 'admin_vehicle_detail_screen.dart';
 import 'admin_base_screen.dart';
 
 class AdminFleetScreen extends StatefulWidget {
-  const AdminFleetScreen({super.key});
+  final String initialFilter;
+  const AdminFleetScreen({super.key, this.initialFilter = 'all'});
 
   @override
   State<AdminFleetScreen> createState() => _AdminFleetScreenState();
@@ -16,11 +17,12 @@ class _AdminFleetScreenState extends State<AdminFleetScreen> {
   List<Vehicle> _vehicles = [];
   List<Map<String, dynamic>> _assignments = [];
   bool _loading = true;
-  String _filter = 'all';
+  late String _filter;
 
   @override
   void initState() {
     super.initState();
+    _filter = widget.initialFilter;
     _load();
   }
 

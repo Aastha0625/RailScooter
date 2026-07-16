@@ -6,7 +6,8 @@ import 'admin_task_details_screen.dart';
 import 'admin_base_screen.dart';
 
 class AdminTasksScreen extends StatefulWidget {
-  const AdminTasksScreen({super.key});
+  final String initialFilter;
+  const AdminTasksScreen({super.key, this.initialFilter = 'all'});
 
   @override
   State<AdminTasksScreen> createState() => _AdminTasksScreenState();
@@ -15,10 +16,12 @@ class AdminTasksScreen extends StatefulWidget {
 class _AdminTasksScreenState extends State<AdminTasksScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _tasks = [];
+  late String _filter;
 
   @override
   void initState() {
     super.initState();
+    _filter = widget.initialFilter;
     _loadTasks();
   }
 
@@ -41,28 +44,73 @@ class _AdminTasksScreenState extends State<AdminTasksScreen> {
     }
   }
 
+  List<Map<String, dynamic>> get _filteredTasks {
+    if (_filter == 'all') return _tasks;
+    if (_filter == 'Pending') return _tasks.where((t) => t['status'] == 'Assigned' || t['status'] == 'Pending').toList();
+    if (_filter == 'Completed') return _tasks.where((t) => t['status'] == 'Completed').toList();
+    return _tasks;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AdminBaseScreen(
       title: 'All Tasks',
-      body: RefreshIndicator(
-        onRefresh: _loadTasks,
-        color: AppColors.accent,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-            : _tasks.isEmpty
-                ? const Center(
-                    child: Text('No tasks found.', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: _tasks.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final task = _tasks[index];
-                      return _buildTaskCard(task);
-                    },
-                  ),
+      body: Column(
+        children: [
+          _buildFilterBar(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadTasks,
+              color: AppColors.accent,
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                  : _filteredTasks.isEmpty
+                      ? const Center(
+                          child: Text('No tasks found.', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: _filteredTasks.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final task = _filteredTasks[index];
+                            return _buildTaskCard(task);
+                          },
+                        ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          const Text('Filter:', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _filter,
+                isDense: true,
+                isExpanded: true,
+                icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All Tasks')),
+                  DropdownMenuItem(value: 'Pending', child: Text('Pending & Assigned')),
+                  DropdownMenuItem(value: 'Completed', child: Text('Completed')),
+                ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _filter = val);
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

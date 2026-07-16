@@ -153,6 +153,36 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> with SingleTick
     );
   }
 
+  Future<void> _resolveIssue(dynamic issue) async {
+    setState(() => _loading = true);
+    try {
+      await Supabase.instance.client
+          .from('trackman_issues')
+          .update({'status': 'resolved', 'resolved_at': DateTime.now().toIso8601String()})
+          .eq('id', issue['id']);
+      
+      await ApiService.logActivity(
+        eventType: 'issue_resolved',
+        description: 'Issue "${issue['category']}" was marked as resolved by Admin',
+      );
+      
+      await _load();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Issue marked as resolved.'), backgroundColor: Colors.green)
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error resolving issue: $e'), backgroundColor: Colors.red)
+        );
+      }
+    }
+  }
+
   Widget _buildIssuesTab() {
     if (_issues.isEmpty) {
       return const Center(
@@ -175,7 +205,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> with SingleTick
         itemCount: _issues.length,
         itemBuilder: (context, index) {
           final issue = _issues[index];
-          return _IssueCard(issue: issue);
+          return _IssueCard(
+            issue: issue,
+            onResolve: issue['status'] != 'resolved' ? () => _resolveIssue(issue) : null,
+          );
         },
       ),
     );
@@ -427,7 +460,8 @@ class _SeverityBadge extends StatelessWidget {
 }
 class _IssueCard extends StatelessWidget {
   final dynamic issue;
-  const _IssueCard({required this.issue});
+  final VoidCallback? onResolve;
+  const _IssueCard({required this.issue, this.onResolve});
 
   Color _severityColor(String s) {
     switch (s) {
@@ -603,22 +637,35 @@ class _IssueCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: issue['status'] == 'resolved' ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: issue['status'] == 'resolved' ? Colors.green : Colors.orange),
-                      ),
-                      child: Text(
-                        (issue['status'] ?? 'pending').toString().toUpperCase(),
-                        style: TextStyle(
-                          color: issue['status'] == 'resolved' ? Colors.green : Colors.orange,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                    if (onResolve != null)
+                      TextButton.icon(
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: const Text('Mark Resolved', style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        onPressed: () {
+                          onResolve!();
+                        },
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: issue['status'] == 'resolved' ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: issue['status'] == 'resolved' ? Colors.green : Colors.orange),
+                        ),
+                        child: Text(
+                          (issue['status'] ?? 'pending').toString().toUpperCase(),
+                          style: TextStyle(
+                            color: issue['status'] == 'resolved' ? Colors.green : Colors.orange,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ],
@@ -783,3 +830,4 @@ class _IssueMapWidgetState extends State<_IssueMapWidget> {
     );
   }
 }
+

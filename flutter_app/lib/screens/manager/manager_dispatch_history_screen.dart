@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
 import 'manager_base_screen.dart';
 
 class ManagerDispatchHistoryScreen extends StatefulWidget {
-  const ManagerDispatchHistoryScreen({super.key});
+  final String userRole;
+  const ManagerDispatchHistoryScreen({super.key, this.userRole = 'manager'});
 
   @override
   State<ManagerDispatchHistoryScreen> createState() => _ManagerDispatchHistoryScreenState();
@@ -51,24 +53,34 @@ class _ManagerDispatchHistoryScreenState extends State<ManagerDispatchHistoryScr
 
   @override
   Widget build(BuildContext context) {
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+        : _history.isEmpty
+            ? _buildEmptyState()
+            : RefreshIndicator(
+                onRefresh: _fetchHistory,
+                color: AppColors.accent,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _history.length,
+                  itemBuilder: (context, index) {
+                    final dispatch = _history[index];
+                    return _buildHistoryCard(dispatch);
+                  },
+                ),
+              );
+
+    if (widget.userRole == 'admin') {
+      return AdminBaseScreen(
+        title: 'Dispatch History',
+        appBar: const CustomAppBar(title: 'Dispatch History'),
+        body: body,
+      );
+    }
+
     return ManagerBaseScreen(
       appBar: const CustomAppBar(title: 'Dispatch History'),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : _history.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _fetchHistory,
-                  color: AppColors.accent,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _history.length,
-                    itemBuilder: (context, index) {
-                      final dispatch = _history[index];
-                      return _buildHistoryCard(dispatch);
-                    },
-                  ),
-                ),
+      body: body,
     );
   }
 

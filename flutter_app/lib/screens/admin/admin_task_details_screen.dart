@@ -89,6 +89,123 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
     }
   }
 
+  Future<void> _deleteTask() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Task'),
+        content: const Text('Are you sure you want to permanently delete this task?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _updating = true);
+      try {
+        await Supabase.instance.client.from('trackman_tasks').delete().eq('id', widget.task['id']);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Task deleted successfully'), backgroundColor: Colors.green));
+          Navigator.pop(context, true); // return true to refresh
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete task: $e'), backgroundColor: Colors.red));
+        }
+      } finally {
+        if (mounted) setState(() => _updating = false);
+      }
+    }
+  }
+
+  Future<void> _editTask() async {
+    final titleController = TextEditingController(text: widget.task['title']);
+    final descController = TextEditingController(text: widget.task['description']);
+    String priority = widget.task['priority'] ?? 'Normal';
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Edit Task'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descController,
+                      decoration: const InputDecoration(labelText: 'Description'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: priority,
+                      decoration: const InputDecoration(labelText: 'Priority'),
+                      items: ['Low', 'Normal', 'High', 'Urgent'].map((p) {
+                        return DropdownMenuItem(value: p, child: Text(p));
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => priority = val);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+
+    if (result == true) {
+      setState(() => _updating = true);
+      try {
+        await Supabase.instance.client.from('trackman_tasks').update({
+          'title': titleController.text,
+          'description': descController.text,
+          'priority': priority,
+        }).eq('id', widget.task['id']);
+        
+        setState(() {
+          widget.task['title'] = titleController.text;
+          widget.task['description'] = descController.text;
+          widget.task['priority'] = priority;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Task updated successfully'), backgroundColor: Colors.green));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update task: $e'), backgroundColor: Colors.red));
+        }
+      } finally {
+        if (mounted) setState(() => _updating = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
@@ -129,6 +246,18 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
         elevation: 0,
         title: const Text('Task Details', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _editTask,
+            tooltip: 'Edit Task',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _deleteTask,
+            tooltip: 'Delete Task',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

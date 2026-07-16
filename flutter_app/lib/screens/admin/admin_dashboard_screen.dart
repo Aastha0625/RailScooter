@@ -25,7 +25,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _pendingCount = 0;
   int _totalUsers = 0;
   int _totalVehicles = 0;
-  int _broadcastCount = 0;
+  int _completedTasksCount = 0;
   List<Map<String, dynamic>> _activityLog = [];
   List<AlertRule> _rules = [];
   List<VehicleAlert> _alerts = [];
@@ -73,24 +73,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ApiService.fetchPendingUsersCount(),
         ApiService.fetchUsersCount(),
         ApiService.fetchActivityLog(limit: 5), // Only need a preview now
-        ApiService.fetchBroadcastsCount(),
+        ApiService.fetchCompletedTasksCount(),
         ApiService.fetchDashboardStats(),
         ApiService.fetchAlertRules(),
         ApiService.fetchAlertEvents(unacknowledged: true),
       ]);
       if (!mounted) return;
       setState(() {
-        _pendingCount = results[0] as int;
-        _totalUsers = results[1] as int;
-        _activityLog = results[2] as List<Map<String, dynamic>>;
-        _broadcastCount = results[3] as int;
-        final stats = results[4] as Map<String, int>;
+        _pendingCount = (results[0] as num?)?.toInt() ?? 0;
+        _totalUsers = (results[1] as num?)?.toInt() ?? 0;
+        _activityLog = (results[2] as List?)?.cast<Map<String, dynamic>>() ?? [];
+        _completedTasksCount = (results[3] as num?)?.toInt() ?? 0;
+        final stats = (results[4] as Map?)?.cast<String, int>() ?? {};
         _totalVehicles = stats['total_vehicles'] ?? 0;
-        _rules = (results[5] as List<AlertRule>).take(3).toList();
-        _alerts = (results[6] as List<VehicleAlert>).take(4).toList();
+        _rules = ((results[5] as List?)?.cast<AlertRule>() ?? []).take(3).toList();
+        _alerts = ((results[6] as List?)?.cast<VehicleAlert>() ?? []).take(4).toList();
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Error loading dashboard data: $e\\n$st');
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -357,6 +358,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: '$_pendingCount',
               color: AppColors.severityHigh,
               highlight: _pendingCount > 0,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
             ),
             _buildStatCard(
               context: context,
@@ -364,6 +366,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               label: 'Total Users',
               value: '$_totalUsers',
               color: AppColors.primary,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
             ),
             _buildStatCard(
               context: context,
@@ -371,13 +374,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               label: 'Fleet Size',
               value: '$_totalVehicles',
               color: AppColors.accent,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFleetScreen(initialFilter: 'all'))),
             ),
             _buildStatCard(
               context: context,
-              icon: Icons.campaign_rounded,
-              label: 'Broadcasts',
-              value: '$_broadcastCount',
-              color: AppColors.statusIdle,
+              icon: Icons.task_alt_rounded,
+              label: 'Completed Tasks',
+              value: '$_completedTasksCount',
+              color: AppColors.statusActive,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTasksScreen(initialFilter: 'Completed'))),
             ),
           ],
         );
@@ -392,12 +397,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     required String value,
     required Color color,
     bool highlight = false,
+    VoidCallback? onTap,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 360;
     final padding = isNarrow ? 12.0 : 16.0;
 
-    return AnimatedContainer(
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
@@ -461,9 +469,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildSectionHeader(IconData icon, String title, Color color) {
     return Row(
       children: [

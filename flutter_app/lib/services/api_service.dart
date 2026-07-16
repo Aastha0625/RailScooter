@@ -542,6 +542,18 @@ class ApiService {
     return Map<String, dynamic>.from(response);
   }
 
+  static Future<int> fetchCompletedTasksCount() async {
+    try {
+      final response = await _sb
+          .from('trackman_tasks')
+          .select('id')
+          .eq('status', 'Completed');
+      return (response as List).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   static Future<void> updateTaskStatus(String taskId, String status) async {
     await _sb.from('trackman_tasks').update({'status': status}).eq('id', taskId);
   }

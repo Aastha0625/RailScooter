@@ -4,10 +4,13 @@ import '../../models/user.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
 import 'manager_base_screen.dart';
+import 'manager_dispatch_history_screen.dart';
 
 class ManagerDispatchScreen extends StatefulWidget {
-  const ManagerDispatchScreen({super.key});
+  final String userRole;
+  const ManagerDispatchScreen({super.key, this.userRole = 'manager'});
 
   @override
   State<ManagerDispatchScreen> createState() => _ManagerDispatchScreenState();
@@ -86,26 +89,52 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appBar = CustomAppBar(
+      title: 'Dispatch Vehicles',
+      additionalActions: [
+        IconButton(
+          icon: const Icon(Icons.history, color: Colors.white),
+          tooltip: 'Dispatch History',
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => ManagerDispatchHistoryScreen(userRole: widget.userRole)));
+          },
+        )
+      ],
+    );
+
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+        : _activeDispatches.isEmpty
+            ? _buildEmptyState()
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _activeDispatches.length,
+                itemBuilder: (context, index) {
+                  final dispatch = _activeDispatches[index];
+                  return _buildDispatchCard(dispatch);
+                },
+              );
+              
+    final fab = FloatingActionButton.extended(
+      onPressed: _showNewDispatchDialog,
+      backgroundColor: AppColors.primary,
+      icon: const Icon(Icons.send_rounded, color: Colors.white),
+      label: const Text('New Dispatch', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+    );
+
+    if (widget.userRole == 'admin') {
+      return AdminBaseScreen(
+        title: 'Dispatch Vehicles',
+        appBar: appBar,
+        body: body,
+        floatingActionButton: fab,
+      );
+    }
+
     return ManagerBaseScreen(
-      appBar: const CustomAppBar(title: 'Dispatch Vehicles'),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : _activeDispatches.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _activeDispatches.length,
-                  itemBuilder: (context, index) {
-                    final dispatch = _activeDispatches[index];
-                    return _buildDispatchCard(dispatch);
-                  },
-                ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showNewDispatchDialog,
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.send_rounded, color: Colors.white),
-        label: const Text('New Dispatch', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
+      appBar: appBar,
+      body: body,
+      floatingActionButton: fab,
     );
   }
 
