@@ -27,9 +27,10 @@ class _TrackmanSafetyScreenState extends State<TrackmanSafetyScreen> {
   Widget build(BuildContext context) {
     return TrackmanBaseScreen(
       appBar: const CustomAppBar(title: 'Safety Guidelines'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
@@ -131,6 +132,7 @@ class _TrackmanSafetyScreenState extends State<TrackmanSafetyScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

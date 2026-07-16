@@ -460,8 +460,8 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
     bool alertOnEnter = false;
     final formKey = GlobalKey<FormState>();
     
-    LatLng? _selectedLocation;
-    bool _fetchingLocation = false;
+    LatLng? selectedLocation;
+    bool fetchingLocation = false;
 
     showModalBottomSheet(
       context: context,
@@ -546,17 +546,17 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            setModal(() => _fetchingLocation = true);
+                            setModal(() => fetchingLocation = true);
                             try {
                               final permission = await Geolocator.checkPermission();
                               if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
                                 final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
-                                setModal(() => _selectedLocation = LatLng(pos.latitude, pos.longitude));
+                                setModal(() => selectedLocation = LatLng(pos.latitude, pos.longitude));
                               }
                             } catch (_) {}
-                            setModal(() => _fetchingLocation = false);
+                            setModal(() => fetchingLocation = false);
                           },
-                          icon: _fetchingLocation 
+                          icon: fetchingLocation 
                             ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) 
                             : const Icon(Icons.my_location),
                           label: const Text('Live GPS'),
@@ -567,8 +567,8 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            LatLng startingLocation = _selectedLocation ?? const LatLng(51.509865, -0.118092);
-                            if (_selectedLocation == null) {
+                            LatLng startingLocation = selectedLocation ?? const LatLng(51.509865, -0.118092);
+                            if (selectedLocation == null) {
                               try {
                                 final permission = await Geolocator.checkPermission();
                                 if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
@@ -585,7 +585,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                               ),
                             );
                             if (selected != null) {
-                              setModal(() => _selectedLocation = selected);
+                              setModal(() => selectedLocation = selected);
                             }
                           },
                           icon: const Icon(Icons.map),
@@ -595,9 +595,9 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                       ),
                     ],
                   ),
-                  if (_selectedLocation != null) ...[
+                  if (selectedLocation != null) ...[
                     const SizedBox(height: 8),
-                    Text('Location Set: ${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)}', 
+                    Text('Location Set: ${selectedLocation!.latitude.toStringAsFixed(4)}, ${selectedLocation!.longitude.toStringAsFixed(4)}', 
                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
                   ],
                   const SizedBox(height: 16),
@@ -631,7 +631,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                     child: ElevatedButton(
                       onPressed: () async {
                         if (!formKey.currentState!.validate()) return;
-                        if (_selectedLocation == null) {
+                        if (selectedLocation == null) {
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a zone location on the map.')));
                           return;
                         }
@@ -639,8 +639,8 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                           'name': nameCtrl.text.trim(),
                           'description': descCtrl.text.trim(),
                           'fence_type': fenceType,
-                          'center_lat': _selectedLocation!.latitude,
-                          'center_lng': _selectedLocation!.longitude,
+                          'center_lat': selectedLocation!.latitude,
+                          'center_lng': selectedLocation!.longitude,
                           'radius_meters':
                               double.tryParse(radiusCtrl.text) ?? 500,
                           'is_active': true,

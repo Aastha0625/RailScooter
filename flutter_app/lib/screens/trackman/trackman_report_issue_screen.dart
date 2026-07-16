@@ -213,8 +213,9 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
   Widget build(BuildContext context) {
     return TrackmanBaseScreen(
       appBar: const CustomAppBar(title: 'Report Issue'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -394,6 +395,7 @@ class _TrackmanReportIssueScreenState extends State<TrackmanReportIssueScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

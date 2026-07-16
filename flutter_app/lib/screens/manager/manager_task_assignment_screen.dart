@@ -303,10 +303,11 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
         backgroundColor: AppColors.primary,
         elevation: 0,
       ),
-      body: _loading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: _loading 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
             child: Form(
               key: _formKey,
               child: Column(
@@ -576,6 +577,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
               ),
             ),
           ),
+        ),
     );
   }
 

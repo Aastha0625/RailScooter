@@ -153,7 +153,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: priority,
+                      initialValue: priority,
                       decoration: const InputDecoration(labelText: 'Priority'),
                       items: ['Low', 'Normal', 'High', 'Urgent'].map((p) {
                         return DropdownMenuItem(value: p, child: Text(p));
@@ -210,7 +210,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
   Widget build(BuildContext context) {
     final task = widget.task;
 
-    LatLng? _taskLocation;
+    LatLng? taskLocation;
     final locStr = task['location'] ?? '';
     if (locStr.contains(',')) {
       final parts = locStr.split(',');
@@ -218,7 +218,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
         final lat = double.tryParse(parts[0].trim());
         final lng = double.tryParse(parts[1].trim());
         if (lat != null && lng != null) {
-          _taskLocation = LatLng(lat, lng);
+          taskLocation = LatLng(lat, lng);
         }
       }
     }
@@ -259,8 +259,9 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -279,7 +280,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 16),
-                  if (_taskLocation != null) ...[
+                  if (taskLocation != null) ...[
                     const Padding(
                       padding: EdgeInsets.only(bottom: 8),
                       child: Row(
@@ -303,7 +304,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
                           children: [
                             FlutterMap(
                               options: MapOptions(
-                                initialCenter: _taskLocation,
+                                initialCenter: taskLocation,
                                 initialZoom: 15.0,
                                 interactionOptions: const InteractionOptions(
                                   flags: InteractiveFlag.none,
@@ -317,7 +318,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
                                 MarkerLayer(
                                   markers: [
                                     Marker(
-                                      point: _taskLocation,
+                                      point: taskLocation,
                                       width: 40,
                                       height: 40,
                                       alignment: Alignment.topCenter,
@@ -347,7 +348,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
                                                 height: MediaQuery.of(context).size.height * 0.7,
                                                 child: FlutterMap(
                                                   options: MapOptions(
-                                                    initialCenter: _taskLocation!,
+                                                    initialCenter: taskLocation!,
                                                     initialZoom: 15.0,
                                                   ),
                                                   children: [
@@ -358,7 +359,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
                                                     MarkerLayer(
                                                       markers: [
                                                         Marker(
-                                                          point: _taskLocation!,
+                                                          point: taskLocation,
                                                           width: 40,
                                                           height: 40,
                                                           alignment: Alignment.topCenter,
@@ -532,6 +533,7 @@ class _AdminTaskDetailsScreenState extends State<AdminTaskDetailsScreen> {
               ),
           ],
         ),
+      ),
       ),
     );
   }

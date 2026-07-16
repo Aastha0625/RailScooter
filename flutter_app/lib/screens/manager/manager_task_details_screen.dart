@@ -93,7 +93,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
   Widget build(BuildContext context) {
     final task = widget.task;
 
-    LatLng? _taskLocation;
+    LatLng? taskLocation;
     final locStr = task['location'] ?? '';
     if (locStr.contains(',')) {
       final parts = locStr.split(',');
@@ -101,7 +101,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
         final lat = double.tryParse(parts[0].trim());
         final lng = double.tryParse(parts[1].trim());
         if (lat != null && lng != null) {
-          _taskLocation = LatLng(lat, lng);
+          taskLocation = LatLng(lat, lng);
         }
       }
     }
@@ -130,8 +130,9 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
         title: const Text('Task Details', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -150,7 +151,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 16),
-                  if (_taskLocation != null) ...[
+                  if (taskLocation != null) ...[
                     const Padding(
                       padding: EdgeInsets.only(bottom: 8),
                       child: Row(
@@ -174,7 +175,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                           children: [
                             FlutterMap(
                               options: MapOptions(
-                                initialCenter: _taskLocation,
+                                initialCenter: taskLocation,
                                 initialZoom: 15.0,
                                 interactionOptions: const InteractionOptions(
                                   flags: InteractiveFlag.none,
@@ -188,7 +189,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                                 MarkerLayer(
                                   markers: [
                                     Marker(
-                                      point: _taskLocation,
+                                      point: taskLocation,
                                       width: 40,
                                       height: 40,
                                       alignment: Alignment.topCenter,
@@ -218,7 +219,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                                                 height: MediaQuery.of(context).size.height * 0.7,
                                                 child: FlutterMap(
                                                   options: MapOptions(
-                                                    initialCenter: _taskLocation!,
+                                                    initialCenter: taskLocation!,
                                                     initialZoom: 15.0,
                                                   ),
                                                   children: [
@@ -229,7 +230,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                                                     MarkerLayer(
                                                       markers: [
                                                         Marker(
-                                                          point: _taskLocation!,
+                                                          point: taskLocation,
                                                           width: 40,
                                                           height: 40,
                                                           alignment: Alignment.topCenter,
@@ -403,6 +404,7 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
               ),
           ],
         ),
+      ),
       ),
     );
   }
