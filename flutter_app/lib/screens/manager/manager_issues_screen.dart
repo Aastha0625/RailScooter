@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
 import '../../services/railway_routing_service.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'manager_base_screen.dart';
@@ -27,6 +28,8 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
 
   Future<void> _fetchIssues() async {
     try {
+      final manager = await ApiService.fetchCurrentUserData();
+      
       final data = await Supabase.instance.client
           .from('trackman_issues')
           .select('''
@@ -39,7 +42,7 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
             location_lng,
             image_url,
             created_at,
-            app_users:reporter_id(full_name),
+            app_users:reporter_id(full_name, zone),
             vehicles:vehicle_id(vehicle_id)
           ''')
           .eq('status', 'open')
@@ -47,7 +50,14 @@ class _ManagerIssuesScreenState extends State<ManagerIssuesScreen> {
 
       if (mounted) {
         setState(() {
-          _issues = data;
+          if (manager?.zone != null && manager!.zone!.isNotEmpty) {
+            _issues = data.where((issue) {
+              final reporterZone = issue['app_users']?['zone'] as String?;
+              return reporterZone == manager.zone;
+            }).toList();
+          } else {
+            _issues = data;
+          }
           _loading = false;
         });
       }

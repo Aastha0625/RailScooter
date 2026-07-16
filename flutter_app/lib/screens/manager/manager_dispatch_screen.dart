@@ -28,12 +28,14 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
 
   Future<void> _fetchActiveDispatches() async {
     try {
+      final manager = await ApiService.fetchCurrentUserData();
+      
       final data = await Supabase.instance.client
           .from('vehicle_assignments')
           .select('''
             id,
             assigned_at,
-            app_users:assigned_user_id (id, full_name, employee_id),
+            app_users:assigned_user_id (id, full_name, employee_id, zone),
             vehicles:vehicle_id (id, vehicle_id, status)
           ''')
           .eq('is_active', true)
@@ -41,7 +43,14 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
 
       if (mounted) {
         setState(() {
-          _activeDispatches = data;
+          if (manager?.zone != null && manager!.zone!.isNotEmpty) {
+            _activeDispatches = data.where((d) {
+              final userZone = d['app_users']?['zone'] as String?;
+              return userZone == manager.zone;
+            }).toList();
+          } else {
+            _activeDispatches = data;
+          }
           _loading = false;
         });
       }
@@ -251,8 +260,8 @@ void initState() {
     try {
       final manager = await ApiService.fetchCurrentUserData();
       
-      // Fetch Trackmen (filter by manager's division and only approved trackmen via ApiService)
-      final trackmenData = await ApiService.fetchUsers(division: manager?.division, role: 'trackman');
+      // Fetch Trackmen (filter by manager's division and zone, and only approved trackmen)
+      final trackmenData = await ApiService.fetchUsers(division: manager?.division, zone: manager?.zone, role: 'trackman');
 
       // Fetch Vehicles
       final vehiclesData = await Supabase.instance.client

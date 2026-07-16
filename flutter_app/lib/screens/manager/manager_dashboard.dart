@@ -32,13 +32,17 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     try {
       final stats = await ApiService.fetchDashboardStats();
       
-      // Fetch open issues specific to Manager
-      final issuesResp = await Supabase.instance.client
+      final manager = await ApiService.fetchCurrentUserData();
+      var issuesQuery = Supabase.instance.client
           .from('trackman_issues')
           .select('id')
-          .eq('status', 'open')
-          .count();
+          .eq('status', 'open');
           
+      if (manager?.zone != null && manager!.zone!.isNotEmpty) {
+        issuesQuery = issuesQuery.eq('zone', manager.zone!);
+      }
+      
+      final issuesResp = await issuesQuery.count();
       final issuesCount = issuesResp.count;
 
       if (mounted) {

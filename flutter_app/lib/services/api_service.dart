@@ -470,13 +470,58 @@ class ApiService {
 
   // -------- BROADCAST MESSAGES --------
 
-  static Future<List<Map<String, dynamic>>> fetchBroadcasts() async {
-    final data = await _sb
+  static Future<List<Map<String, dynamic>>> fetchBroadcasts({String? role}) async {
+    final user = await fetchCurrentUserData();
+    if (user == null) return [];
+    
+    var query = _sb
         .from('broadcast_messages')
-        .select('*, app_users(full_name)')
+        .select('*, app_users!inner(full_name, role, zone)');
+        
+    if (role != null) {
+      // Fetch broadcasts targeted to the specific role OR 'all'
+      query = query.inFilter('target_role', [role, 'all']);
+    }
+    
+    final data = await query
         .order('created_at', ascending: false)
-        .limit(50);
-    return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+        .limit(100);
+        
+    List<Map<String, dynamic>> mappedData = (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+    
+    if (user.role != 'admin') {
+      mappedData = mappedData.where((b) {
+        final sender = b['app_users'];
+        if (sender == null) return true;
+        if (sender['role'] == 'admin') return true;
+        return sender['zone'] == user.zone;
+      }).toList();
+    }
+    
+    // Filter task-specific broadcasts
+    final taskBroadcasts = mappedData.where((b) => b['task_id'] != null).toList();
+    if (taskBroadcasts.isNotEmpty) {
+      final taskIds = taskBroadcasts.map((b) => b['task_id']).toSet().toList();
+      final tasks = await _sb.from('trackman_tasks').select('id, assigned_to, assigned_by').inFilter('id', taskIds);
+      
+      final taskMap = {for (var t in tasks) t['id']: t};
+      
+      mappedData = mappedData.where((b) {
+        if (b['task_id'] == null) return true;
+        final task = taskMap[b['task_id']];
+        if (task == null) return false;
+        
+        // Trackman only sees if assigned to them
+        if (user.role == 'trackman' && task['assigned_to'] != user.id) return false;
+        
+        // Manager only sees if they assigned it
+        if (user.role == 'manager' && task['assigned_by'] != user.id) return false;
+        
+        return true;
+      }).toList();
+    }
+    
+    return mappedData;
   }
 
   /// Fetch total count of broadcasts

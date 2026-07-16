@@ -41,12 +41,24 @@ class _TrackmanNotificationsScreenState
           .or('target_role.eq.trackman,target_role.eq.all')
           .order('created_at', ascending: false);
 
-      // Fetch active vehicle alerts
-      final alerts = await client
+      // Fetch active vehicle assignments for this trackman
+      final user = client.auth.currentUser;
+      final assignments = await client
+          .from('vehicle_assignments')
+          .select('vehicle_id')
+          .eq('assigned_user_id', user!.id)
+          .eq('is_active', true);
+      
+      final myVehicleIds = assignments.map((a) => a['vehicle_id']).toSet();
+
+      // Fetch active vehicle alerts, then filter in Dart
+      final allAlertsData = await client
           .from('vehicle_alerts')
           .select()
           .eq('is_acknowledged', false)
           .order('created_at', ascending: false);
+
+      final alerts = allAlertsData.where((a) => myVehicleIds.contains(a['vehicle_id'])).toList();
 
       final List<Map<String, dynamic>> allNotifications = [];
 

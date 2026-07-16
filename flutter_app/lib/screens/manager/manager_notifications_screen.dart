@@ -41,12 +41,24 @@ class _ManagerNotificationsScreenState
           .or('target_role.eq.manager,target_role.eq.all')
           .order('created_at', ascending: false);
 
-      // Fetch active vehicle alerts
-      final alerts = await client
+      // Fetch active vehicle assignments in this manager's zone
+      final manager = await ApiService.fetchCurrentUserData();
+      final assignments = await client
+          .from('vehicle_assignments')
+          .select('vehicle_id, app_users!inner(zone)')
+          .eq('is_active', true)
+          .eq('app_users.zone', manager?.zone ?? '');
+      
+      final myZoneVehicleIds = assignments.map((a) => a['vehicle_id']).toSet();
+
+      // Fetch active vehicle alerts, then filter in Dart
+      final allAlertsData = await client
           .from('vehicle_alerts')
           .select()
           .eq('is_acknowledged', false)
           .order('created_at', ascending: false);
+
+      final alerts = allAlertsData.where((a) => myZoneVehicleIds.contains(a['vehicle_id'])).toList();
 
       final List<Map<String, dynamic>> allNotifications = [];
 
