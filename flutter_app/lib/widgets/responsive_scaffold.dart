@@ -43,7 +43,7 @@ class ResponsiveScaffold extends StatelessWidget {
         backgroundColor: AppColors.background,
         body: Row(
           children: [
-            if (!Navigator.canPop(context)) sidebar,
+            sidebar,
             Expanded(
               child: Scaffold(
                 appBar: appBar,
@@ -61,7 +61,7 @@ class ResponsiveScaffold extends StatelessWidget {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: appBar,
-        drawer: Navigator.canPop(context) ? null : Drawer(
+        drawer: Drawer(
           width: 240, // Slightly wider drawer on mobile for readability
           child: sidebar,
         ),

@@ -23,6 +23,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController(); // For the specific map coordinates/string
+  final List<TextEditingController> _subtaskCtrls = [];
 
   List<AppUser> _trackmen = [];
   List<Vehicle> _vehicles = [];
@@ -54,6 +55,9 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _locationCtrl.dispose();
+    for (var ctrl in _subtaskCtrls) {
+      ctrl.dispose();
+    }
     super.dispose();
   }
 
@@ -121,11 +125,48 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
     setState(() => _submitting = true);
 
     try {
+      // Check if the trackman already has an active assignment for a DIFFERENT vehicle
+      final currentActiveForUser = _assignments.firstWhere(
+          (a) => a['assigned_user_id'] == _selectedTrackman!.id && a['is_active'] == true, 
+          orElse: () => <String, dynamic>{});
+          
+      if (currentActiveForUser.isNotEmpty && currentActiveForUser['vehicle_id'] != _selectedVehicle!.id) {
+        // Pause submitting state to show dialog
+        setState(() => _submitting = false);
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Recall Vehicle'),
+            content: Text('${_selectedTrackman!.fullName} is already assigned to another vehicle. Do you want to recall their current vehicle and assign this new one?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
+                child: const Text('Recall & Assign', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirm != true) return;
+        
+        setState(() => _submitting = true);
+      }
+
       // Create date time object
       final scheduledTime = DateTime(
         _selectedDate!.year, _selectedDate!.month, _selectedDate!.day,
         _selectedTime!.hour, _selectedTime!.minute,
       );
+
+      final subtasksList = _subtaskCtrls
+          .where((c) => c.text.trim().isNotEmpty)
+          .map((c) => {'title': c.text.trim(), 'is_completed': false})
+          .toList();
 
       final taskData = {
         'title': _titleCtrl.text.trim(),
@@ -140,14 +181,27 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
         'zone': _selectedZone,
         'division': _selectedDivision,
         'region': _selectedRegion,
+        'subtasks': subtasksList,
       };
 
       try {
-        await ApiService.createTask(taskData);
+        final createdTask = await ApiService.createTask(taskData);
+        await ApiService.sendBroadcast(
+          title: 'New Task Assigned',
+          body: 'A new task "${taskData['title']}" has been assigned to ${_selectedTrackman!.fullName}.',
+          targetRole: 'trackman',
+          taskId: createdTask['id'],
+        );
       } catch (e) {
         if (e.toString().contains('assigned_by') || e.toString().contains('column')) {
           taskData.remove('assigned_by');
-          await ApiService.createTask(taskData);
+          final createdTask = await ApiService.createTask(taskData);
+          await ApiService.sendBroadcast(
+            title: 'New Task Assigned',
+            body: 'A new task "${taskData['title']}" has been assigned to ${_selectedTrackman!.fullName}.',
+            targetRole: 'trackman',
+            taskId: createdTask['id'],
+          );
         } else {
           rethrow;
         }
@@ -249,10 +303,11 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
         backgroundColor: AppColors.primary,
         elevation: 0,
       ),
-      body: _loading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: _loading 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
             child: Form(
               key: _formKey,
               child: Column(
@@ -264,6 +319,42 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
                   _buildTextField(_titleCtrl, 'Task Title', Icons.title, 'Enter a clear task title'),
                   const SizedBox(height: 16),
                   _buildTextField(_descCtrl, 'Description', Icons.description, 'Describe the task requirements...', maxLines: 3),
+                  
+                  const SizedBox(height: 16),
+                  const Text('Checklists / Sub-tasks (Optional)', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  ...List.generate(_subtaskCtrls.length, (index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(_subtaskCtrls[index], 'Sub-task ${index + 1}', Icons.check_box_outline_blank, 'E.g., Check bolts'),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            onPressed: () {
+                              setState(() {
+                                _subtaskCtrls[index].dispose();
+                                _subtaskCtrls.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _subtaskCtrls.add(TextEditingController());
+                      });
+                    },
+                    icon: const Icon(Icons.add, color: AppColors.primary),
+                    label: const Text('Add Sub-task', style: TextStyle(color: AppColors.primary)),
+                  ),
+                  const SizedBox(height: 16),
+
                   const Text('Location', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   
@@ -486,6 +577,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
               ),
             ),
           ),
+        ),
     );
   }
 

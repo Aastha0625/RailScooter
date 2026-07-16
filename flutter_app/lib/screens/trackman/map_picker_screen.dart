@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_theme.dart';
+import '../../services/railway_routing_service.dart';
 
 class MapPickerScreen extends StatefulWidget {
   final LatLng initialLocation;
@@ -52,10 +53,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             options: MapOptions(
               initialCenter: _selectedLocation,
               initialZoom: 15.0,
-              onTap: (tapPosition, point) {
+              onTap: (tapPosition, point) async {
                 setState(() {
                   _selectedLocation = point;
                 });
+                
+                // Automatically snap to the nearest physical railway track
+                final snappedPoint = await RailwayRoutingService().snapToTrack(point);
+                if (snappedPoint != null && mounted) {
+                  setState(() {
+                    _selectedLocation = snappedPoint;
+                  });
+                }
               },
             ),
             children: [

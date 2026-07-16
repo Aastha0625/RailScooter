@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/app_sidebar.dart';
 import '../../widgets/custom_app_bar.dart';
@@ -12,6 +13,8 @@ import '../vehicles/vehicle_registry_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
 import 'manager_profile_screen.dart';
 import 'manager_task_assignment_screen.dart';
+import 'manager_tasks_screen.dart';
+import 'manager_notifications_screen.dart';
 
 class ManagerBaseScreen extends StatefulWidget {
   final String? title;
@@ -33,11 +36,41 @@ class ManagerBaseScreen extends StatefulWidget {
 
 class _ManagerBaseScreenState extends State<ManagerBaseScreen> {
   String _managerName = 'Manager';
+  bool _hasNotifications = false;
 
   @override
   void initState() {
     super.initState();
     _loadManagerName();
+    _checkNotifications();
+  }
+
+  Future<void> _checkNotifications() async {
+    try {
+      final client = Supabase.instance.client;
+      final prefs = await SharedPreferences.getInstance();
+      final lastReadStr = prefs.getString('last_manager_notification_read_time');
+      DateTime lastRead;
+      if (lastReadStr != null) {
+        lastRead = DateTime.parse(lastReadStr);
+      } else {
+        lastRead = DateTime.now();
+        await prefs.setString('last_manager_notification_read_time', lastRead.toIso8601String());
+      }
+
+      final broadcastsResponse = await client
+          .from('broadcast_messages')
+          .select('id, created_at')
+          .or('target_role.eq.manager,target_role.eq.all');
+
+      final hasUnreadBroadcasts = broadcastsResponse
+          .any((b) => DateTime.parse(b['created_at']).isAfter(lastRead));
+
+      if (!mounted) return;
+      setState(() => _hasNotifications = hasUnreadBroadcasts);
+    } catch (e) {
+      debugPrint('Notification error: $e');
+    }
   }
 
   Future<void> _loadManagerName() async {
@@ -68,6 +101,11 @@ class _ManagerBaseScreenState extends State<ManagerBaseScreen> {
         icon: Icons.assignment_add,
         label: 'Assign Task',
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerTaskAssignmentScreen())),
+      ),
+      SidebarItem(
+        icon: Icons.assignment_outlined,
+        label: 'Assigned Tasks',
+        onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagerTasksScreen())),
       ),
       SidebarItem(
         icon: Icons.send_rounded,
@@ -102,6 +140,32 @@ class _ManagerBaseScreenState extends State<ManagerBaseScreen> {
     return ResponsiveScaffold(
       appBar: widget.appBar ?? CustomAppBar(
         title: widget.title!,
+        additionalActions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (_) => const ManagerNotificationsScreen())
+              ).then((_) => _checkNotifications());
+            },
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_outlined, color: Colors.white, size: 26),
+                if (_hasNotifications)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
         onProfileTap: () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagerProfileScreen()));
         },

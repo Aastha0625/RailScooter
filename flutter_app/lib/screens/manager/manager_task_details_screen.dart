@@ -5,27 +5,28 @@ import '../../services/api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher_string.dart';
-import 'task_completion_modal.dart';
 
-class TrackmanTaskDetailsScreen extends StatefulWidget {
+class ManagerTaskDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> task;
 
-  const TrackmanTaskDetailsScreen({
+  const ManagerTaskDetailsScreen({
     super.key,
     required this.task,
   });
 
   @override
-  State<TrackmanTaskDetailsScreen> createState() => _TrackmanTaskDetailsScreenState();
+  State<ManagerTaskDetailsScreen> createState() => _ManagerTaskDetailsScreenState();
 }
 
-class _TrackmanTaskDetailsScreenState extends State<TrackmanTaskDetailsScreen> {
+class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
+  late bool isCompleted;
+  bool _updating = false;
   String _managerName = "Unknown Manager";
 
   @override
   void initState() {
     super.initState();
+    isCompleted = widget.task['status'] == 'Completed';
     _fetchManagerName();
   }
 
@@ -57,6 +58,34 @@ class _TrackmanTaskDetailsScreenState extends State<TrackmanTaskDetailsScreen> {
           _managerName = "Unknown (Missing 'assigned_by' in task)";
         });
       }
+    }
+  }
+
+  Future<void> _toggleStatus(bool value) async {
+    setState(() => _updating = true);
+    final newStatus = value ? 'Completed' : 'Assigned';
+    try {
+      if (widget.task['id'] != null) {
+        await ApiService.updateTaskStatus(widget.task['id'], newStatus);
+        if (value) {
+          await ApiService.sendBroadcast(
+            title: 'Task Completed',
+            body: 'Manager approved and completed the task "${widget.task['title']}".',
+            targetRole: 'trackman',
+            taskId: widget.task['id'],
+          );
+        }
+      }
+      setState(() {
+        isCompleted = value;
+        widget.task['status'] = newStatus;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update: $e'), backgroundColor: Colors.red));
+      }
+    } finally {
+      if (mounted) setState(() => _updating = false);
     }
   }
 
@@ -98,7 +127,8 @@ class _TrackmanTaskDetailsScreenState extends State<TrackmanTaskDetailsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         elevation: 0,
-        title: const Text('Task Details', style: TextStyle(fontWeight: FontWeight.w600)),
+        title: const Text('Task Details', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -302,38 +332,61 @@ class _TrackmanTaskDetailsScreenState extends State<TrackmanTaskDetailsScreen> {
                   children: [
                     const Text("Checklist", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    ...(task['subtasks'] as List).asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final st = entry.value;
+                    ...(task['subtasks'] as List).map((st) {
                       bool checked = st['is_completed'] == true;
-                      return Material(
-                        color: Colors.transparent,
-                        child: CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          activeColor: Colors.green,
-                          title: Text(st['title'], style: TextStyle(color: checked ? AppColors.textSecondary : AppColors.textPrimary, decoration: checked ? TextDecoration.lineThrough : null)),
-                          value: checked,
-                          onChanged: (val) async {
-                            setState(() {
-                              task['subtasks'][idx]['is_completed'] = val;
-                            });
-                            await ApiService.updateTask(task['id'], {'subtasks': task['subtasks']});
-                          },
-                        ),
+                      return Row(
+                        children: [
+                          Icon(checked ? Icons.check_box : Icons.check_box_outline_blank, color: checked ? Colors.green : Colors.grey),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(st['title'], style: TextStyle(color: checked ? AppColors.textSecondary : AppColors.textPrimary, decoration: checked ? TextDecoration.lineThrough : null))),
+                        ],
                       );
                     }),
                   ],
                 ),
               ),
             ],
-            const SizedBox(height: 24),
-            if (task['status'] == 'Review Pending')
+            if (task['completion_photo_url'] != null || task['completion_notes'] != null) ...[
+              const SizedBox(height: 24),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
-                child: const Text("⏳ Task submitted for Manager Review", textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange)),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Proof of Completion", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    if (task['completion_notes'] != null && task['completion_notes'].toString().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text("Notes: ${task['completion_notes']}", style: const TextStyle(color: AppColors.textPrimary)),
+                      ),
+                    if (task['completion_photo_url'] != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(task['completion_photo_url'], width: double.infinity, height: 200, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Text("Failed to load photo", style: TextStyle(color: Colors.red))),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            if (task['status'] == 'Review Pending')
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _updating ? null : () => _toggleStatus(true),
+                  icon: _updating ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.verified, color: Colors.white),
+                  label: Text(_updating ? "Approving..." : "Approve & Complete Task", style: const TextStyle(color: Colors.white, fontSize: 16)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                ),
               )
             else if (task['status'] == 'Completed')
               Container(
@@ -342,46 +395,13 @@ class _TrackmanTaskDetailsScreenState extends State<TrackmanTaskDetailsScreen> {
                 decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
                 child: const Text("✅ Task Approved & Completed", textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
               )
-            else ...[
-              const Text("Update Status", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: ['Assigned', 'In Progress', 'On Hold'].contains(task['status']) ? task['status'] : 'Assigned',
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
-                ),
-                items: ['Assigned', 'In Progress', 'On Hold'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (val) async {
-                  if (val != null) {
-                    setState(() => task['status'] = val);
-                    await ApiService.updateTask(task['id'], {'status': val});
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
+            else
+              Container(
                 width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final result = await showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => TaskCompletionModal(taskId: task['id']),
-                    );
-                    if (result == true && mounted) {
-                      setState(() => task['status'] = 'Review Pending');
-                    }
-                  },
-                  icon: const Icon(Icons.camera_alt, color: Colors.white),
-                  label: const Text("Submit for Review", style: TextStyle(color: Colors.white, fontSize: 16)),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
-                ),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
+                child: Text("⏳ Task Status: ${task['status']}", textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange)),
               ),
-            ],
           ],
         ),
       ),

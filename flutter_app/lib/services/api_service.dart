@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -249,7 +250,10 @@ class ApiService {
   // -------- ASSIGNMENTS --------
 
   static Future<List<Map<String, dynamic>>> fetchAssignments() async {
-    return _list(await _request('GET', '/assignments')).map(_map).toList();
+    final data = await _sb
+        .from('vehicle_assignments')
+        .select('*');
+    return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
   }
 
   static Future<void> createAssignment({
@@ -257,10 +261,24 @@ class ApiService {
     String? assignedUserId,
     String? notes,
   }) async {
-    await _request('POST', '/assignments', body: {
+    if (assignedUserId != null) {
+      await _sb.from('vehicle_assignments')
+          .update({'is_active': false})
+          .eq('assigned_user_id', assignedUserId)
+          .eq('is_active', true);
+    }
+    
+    await _sb.from('vehicle_assignments')
+        .update({'is_active': false})
+        .eq('vehicle_id', vehicleId)
+        .eq('is_active', true);
+        
+    await _sb.from('vehicle_assignments').insert({
       'vehicle_id': vehicleId,
       'assigned_user_id': assignedUserId,
       'notes': notes ?? '',
+      'is_active': true,
+      'assigned_by': _sb.auth.currentUser?.id,
     });
   }
 
@@ -312,7 +330,28 @@ class ApiService {
   }
 
   static Future<void> acknowledgeAlert(String alertId) async {
-    await _request('PUT', '/alerts/events/$alertId/acknowledge');
+    // Check if it's a dummy alert first so we don't crash
+    if (alertId.startsWith('dummy')) return;
+    
+    await _sb.from('vehicle_alerts')
+        .update({'is_acknowledged': true})
+        .eq('id', alertId);
+  }
+
+  static Future<void> simulateAlertEvent() async {
+    // Pick a random vehicle
+    final vehiclesData = await _sb.from('vehicles').select('id').limit(1);
+    if (vehiclesData.isEmpty) throw Exception("No vehicles found");
+    final vehicleId = vehiclesData.first['id'];
+
+    await _sb.from('vehicle_alerts').insert({
+      'vehicle_id': vehicleId,
+      'alert_type': 'geofence',
+      'severity': 'critical',
+      'message': 'Simulated Alert: Manual DB Injection',
+      'latitude': 28.6139,
+      'longitude': 77.2090,
+    });
   }
 
   // -------- GEOFENCES --------
@@ -431,13 +470,58 @@ class ApiService {
 
   // -------- BROADCAST MESSAGES --------
 
-  static Future<List<Map<String, dynamic>>> fetchBroadcasts() async {
-    final data = await _sb
+  static Future<List<Map<String, dynamic>>> fetchBroadcasts({String? role}) async {
+    final user = await fetchCurrentUserData();
+    if (user == null) return [];
+    
+    var query = _sb
         .from('broadcast_messages')
-        .select('*, app_users(full_name)')
+        .select('*, app_users!inner(full_name, role, zone)');
+        
+    if (role != null) {
+      // Fetch broadcasts targeted to the specific role OR 'all'
+      query = query.inFilter('target_role', [role, 'all']);
+    }
+    
+    final data = await query
         .order('created_at', ascending: false)
-        .limit(50);
-    return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+        .limit(100);
+        
+    List<Map<String, dynamic>> mappedData = (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+    
+    if (user.role != 'admin') {
+      mappedData = mappedData.where((b) {
+        final sender = b['app_users'];
+        if (sender == null) return true;
+        if (sender['role'] == 'admin') return true;
+        return sender['zone'] == user.zone;
+      }).toList();
+    }
+    
+    // Filter task-specific broadcasts
+    final taskBroadcasts = mappedData.where((b) => b['task_id'] != null).toList();
+    if (taskBroadcasts.isNotEmpty) {
+      final taskIds = taskBroadcasts.map((b) => b['task_id']).toSet().toList();
+      final tasks = await _sb.from('trackman_tasks').select('id, assigned_to, assigned_by').inFilter('id', taskIds);
+      
+      final taskMap = {for (var t in tasks) t['id']: t};
+      
+      mappedData = mappedData.where((b) {
+        if (b['task_id'] == null) return true;
+        final task = taskMap[b['task_id']];
+        if (task == null) return false;
+        
+        // Trackman only sees if assigned to them
+        if (user.role == 'trackman' && task['assigned_to'] != user.id) return false;
+        
+        // Manager only sees if they assigned it
+        if (user.role == 'manager' && task['assigned_by'] != user.id) return false;
+        
+        return true;
+      }).toList();
+    }
+    
+    return mappedData;
   }
 
   /// Fetch total count of broadcasts
@@ -451,6 +535,7 @@ class ApiService {
     required String title,
     required String body,
     required String targetRole,
+    String? taskId,
   }) async {
     final uid = _sb.auth.currentUser?.id;
     await _sb.from('broadcast_messages').insert({
@@ -458,20 +543,31 @@ class ApiService {
       'body': body,
       'target_role': targetRole,
       'sent_by': uid,
+      if (taskId != null) 'task_id': taskId,
     });
+  }
+
+  static Future<Map<String, dynamic>?> fetchTaskById(String taskId) async {
+    final data = await _sb.from('trackman_tasks').select('*, app_users!trackman_tasks_assigned_to_fkey(full_name), vehicles(vehicle_id, variant)').eq('id', taskId).maybeSingle();
+    if (data == null) return null;
+    return Map<String, dynamic>.from(data);
   }
 
   // -------- TRACKMAN TASKS --------
 
   static Future<List<Map<String, dynamic>>> fetchTasks({
     String? assignedToUserId,
+    String? assignedByUserId,
     List<String>? regions,
     String? division,
     String? zone,
   }) async {
-    var query = _sb.from('trackman_tasks').select('*, app_users(full_name), vehicles(vehicle_id, variant)');
+    var query = _sb.from('trackman_tasks').select('*, app_users!trackman_tasks_assigned_to_fkey(full_name), vehicles(vehicle_id, variant)');
     if (assignedToUserId != null) {
       query = query.eq('assigned_to', assignedToUserId);
+    }
+    if (assignedByUserId != null) {
+      query = query.eq('assigned_by', assignedByUserId);
     }
     if (regions != null && regions.isNotEmpty) {
       query = query.inFilter('region', regions);
@@ -491,7 +587,33 @@ class ApiService {
     return Map<String, dynamic>.from(response);
   }
 
+  static Future<int> fetchCompletedTasksCount() async {
+    try {
+      final response = await _sb
+          .from('trackman_tasks')
+          .select('id')
+          .eq('status', 'Completed');
+      return (response as List).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   static Future<void> updateTaskStatus(String taskId, String status) async {
     await _sb.from('trackman_tasks').update({'status': status}).eq('id', taskId);
+  }
+
+  static Future<void> updateTask(String taskId, Map<String, dynamic> data) async {
+    await _sb.from('trackman_tasks').update(data).eq('id', taskId);
+  }
+
+  static Future<String> uploadTaskPhoto(String taskId, Uint8List imageBytes, String extension) async {
+    final fileName = 'task_${taskId}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    await _sb.storage.from('task_proofs').uploadBinary(
+      fileName, 
+      imageBytes,
+      fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+    );
+    return _sb.storage.from('task_proofs').getPublicUrl(fileName);
   }
 }

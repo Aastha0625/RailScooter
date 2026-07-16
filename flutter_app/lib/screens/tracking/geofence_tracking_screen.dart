@@ -9,10 +9,12 @@ import '../../models/geofence.dart';
 import '../../models/vehicle_location.dart';
 import '../../services/api_service.dart';
 import '../../services/railway_routing_service.dart';
+import '../../constants/app_constants.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../admin/admin_base_screen.dart';
 import '../manager/manager_base_screen.dart';
 import '../trackman/trackman_base_screen.dart';
+import '../trackman/map_picker_screen.dart';
 
 class GeofenceTrackingScreen extends StatefulWidget {
   final String userRole;
@@ -452,13 +454,14 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
   void _showAddGeofence() {
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
-    final latCtrl = TextEditingController(text: '28.6139');
-    final lngCtrl = TextEditingController(text: '77.2090');
     final radiusCtrl = TextEditingController(text: '500');
     String fenceType = 'operational';
     bool alertOnExit = true;
     bool alertOnEnter = false;
     final formKey = GlobalKey<FormState>();
+    
+    LatLng? selectedLocation;
+    bool fetchingLocation = false;
 
     showModalBottomSheet(
       context: context,
@@ -481,10 +484,30 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                 children: [
                   const Text('Add Geofence Zone', style: AppTextStyles.heading2),
                   const SizedBox(height: 20),
-                  TextFormField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Zone Name *'),
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                  Autocomplete<String>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return AppConstants.zones;
+                      }
+                      return AppConstants.zones
+                          .where((String option) => option.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                    },
+                    onSelected: (String selection) {
+                      nameCtrl.text = selection;
+                    },
+                    fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                      // Attach our controller if they type manually
+                      controller.addListener(() {
+                        nameCtrl.text = controller.text;
+                      });
+                      return TextFormField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        onEditingComplete: onEditingComplete,
+                        decoration: const InputDecoration(labelText: 'Zone Name * (Type or select)'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -515,31 +538,69 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  const Text('Zone Center Location *', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
-                          child: TextFormField(
-                        controller: latCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Latitude *'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        validator: (v) => v!.isEmpty ? 'Required' : null,
-                      )),
-                      const SizedBox(width: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            setModal(() => fetchingLocation = true);
+                            try {
+                              final permission = await Geolocator.checkPermission();
+                              if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+                                final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
+                                setModal(() => selectedLocation = LatLng(pos.latitude, pos.longitude));
+                              }
+                            } catch (_) {}
+                            setModal(() => fetchingLocation = false);
+                          },
+                          icon: fetchingLocation 
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) 
+                            : const Icon(Icons.my_location),
+                          label: const Text('Live GPS'),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                          child: TextFormField(
-                        controller: lngCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Longitude *'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        validator: (v) => v!.isEmpty ? 'Required' : null,
-                      )),
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            LatLng startingLocation = selectedLocation ?? const LatLng(51.509865, -0.118092);
+                            if (selectedLocation == null) {
+                              try {
+                                final permission = await Geolocator.checkPermission();
+                                if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+                                  final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
+                                  startingLocation = LatLng(pos.latitude, pos.longitude);
+                                }
+                              } catch (_) {}
+                            }
+                            if (!mounted) return;
+                            final selected = await Navigator.push<LatLng>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MapPickerScreen(initialLocation: startingLocation),
+                              ),
+                            );
+                            if (selected != null) {
+                              setModal(() => selectedLocation = selected);
+                            }
+                          },
+                          icon: const Icon(Icons.map),
+                          label: const Text('Map Pin'),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusIdle),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  if (selectedLocation != null) ...[
+                    const SizedBox(height: 8),
+                    Text('Location Set: ${selectedLocation!.latitude.toStringAsFixed(4)}, ${selectedLocation!.longitude.toStringAsFixed(4)}', 
+                         style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                  ],
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: radiusCtrl,
                     decoration:
@@ -570,14 +631,16 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                     child: ElevatedButton(
                       onPressed: () async {
                         if (!formKey.currentState!.validate()) return;
+                        if (selectedLocation == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a zone location on the map.')));
+                          return;
+                        }
                         await ApiService.createGeofence({
                           'name': nameCtrl.text.trim(),
                           'description': descCtrl.text.trim(),
                           'fence_type': fenceType,
-                          'center_lat':
-                              double.tryParse(latCtrl.text) ?? 0,
-                          'center_lng':
-                              double.tryParse(lngCtrl.text) ?? 0,
+                          'center_lat': selectedLocation!.latitude,
+                          'center_lng': selectedLocation!.longitude,
                           'radius_meters':
                               double.tryParse(radiusCtrl.text) ?? 500,
                           'is_active': true,
@@ -630,8 +693,10 @@ class _GeofenceCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onViewOnMap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -701,7 +766,8 @@ class _GeofenceCard extends StatelessWidget {
             ),
           ],
         ),
-      );
+      ),
+    );
 }
 
 class _TypeBadge extends StatelessWidget {

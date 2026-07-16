@@ -164,7 +164,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
   Widget _buildTopBar() {
     return Container(
       padding: const EdgeInsets.only(
-        top: 16,
+        top: 0,
         left: 20, right: 20, bottom: 12,
       ),
       color: AppColors.primary,
@@ -222,8 +222,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> with SingleTickerPr
     ];
 
     return Container(
-      height: 48,
-      color: Colors.white,
+      height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -326,8 +325,8 @@ class _UserCard extends StatelessWidget {
                   Text(
                     [
                       if (user.phone.isNotEmpty) user.phone,
-                      if (user.employeeId != null) 'ID: ',
-                    ].join(' · '),
+                      if (user.employeeId != null && user.employeeId!.isNotEmpty) 'ID: ${user.employeeId}',
+                    ].join(' • '),
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ],

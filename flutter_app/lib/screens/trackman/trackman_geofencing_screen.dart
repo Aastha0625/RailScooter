@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'trackman_base_screen.dart';
+import '../../services/api_service.dart';
 
 class TrackmanGeofencingScreen extends StatefulWidget {
   const TrackmanGeofencingScreen({super.key});
@@ -19,6 +20,7 @@ class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
   LatLng? _currentLocation;
   bool _locationLoading = true;
   String? _locationError;
+  String _zoneText = 'Loading Zone...';
 
   // Fallback if GPS is unavailable
   static const _fallback = LatLng(28.6139, 77.2090);
@@ -27,6 +29,22 @@ class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
   void initState() {
     super.initState();
     _fetchLocation();
+    _fetchUser();
+  }
+
+  Future<void> _fetchUser() async {
+    final user = await ApiService.fetchCurrentUserData();
+    if (mounted) {
+      setState(() {
+        if (user != null) {
+          final zone = user.zone ?? 'Unknown Zone';
+          final div = user.division ?? 'Unknown Division';
+          _zoneText = '$zone ($div)';
+        } else {
+          _zoneText = 'Main Station Zone';
+        }
+      });
+    }
   }
 
   Future<void> _fetchLocation() async {
@@ -143,15 +161,15 @@ class _TrackmanGeofencingScreenState extends State<TrackmanGeofencingScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Main Station Zone',
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary)),
-                            Text(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_zoneText,
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary)),
+                              Text(
                               _locationLoading
                                   ? 'Fetching your location…'
                                   : _locationError ?? 'Status: Inside Safe Zone',

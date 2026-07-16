@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
+import '../../models/user.dart';
 import '../../services/api_service.dart';
-import 'trackman_task_details_screen.dart';
 import '../../widgets/custom_app_bar.dart';
-import 'trackman_base_screen.dart';
+import 'manager_base_screen.dart';
+import 'manager_task_details_screen.dart';
 
-class TrackmanTasksScreen extends StatefulWidget {
-  const TrackmanTasksScreen({super.key});
+class ManagerTasksScreen extends StatefulWidget {
+  const ManagerTasksScreen({super.key});
 
   @override
-  State<TrackmanTasksScreen> createState() => _TrackmanTasksScreenState();
+  State<ManagerTasksScreen> createState() => _ManagerTasksScreenState();
 }
 
-class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
-  List<Map<String, dynamic>> _tasks = [];
+class _ManagerTasksScreenState extends State<ManagerTasksScreen> {
   bool _loading = true;
+  List<Map<String, dynamic>> _tasks = [];
+  List<Map<String, dynamic>> _filteredTasks = [];
+  AppUser? _manager;
+  
+  String _statusFilter = 'All';
 
   @override
   void initState() {
@@ -28,13 +33,15 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
     try {
       final user = await ApiService.fetchCurrentUserData();
       if (user == null) throw Exception('Not logged in');
+      _manager = user;
       
       final tasks = await ApiService.fetchTasks(
-        assignedToUserId: user.id,
+        assignedByUserId: user.id,
       );
       if (mounted) {
         setState(() {
           _tasks = tasks;
+          _applyFilter();
           _loading = false;
         });
       }
@@ -46,30 +53,69 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
     }
   }
 
+  void _applyFilter() {
+    if (_statusFilter == 'All') {
+      _filteredTasks = List.from(_tasks);
+    } else if (_statusFilter == 'In Progress') {
+      _filteredTasks = _tasks.where((t) => t['status'] == 'In Progress' || t['status'] == 'Review Pending').toList();
+    } else {
+      _filteredTasks = _tasks.where((t) => t['status'] == _statusFilter).toList();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return TrackmanBaseScreen(
-      appBar: const CustomAppBar(title: "My Tasks"),
-      body: RefreshIndicator(
-        onRefresh: _loadTasks,
-        color: AppColors.primary,
-        child: _loading 
-          ? const Center(child: CircularProgressIndicator())
-          : _tasks.isEmpty 
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 100),
-                  Center(child: Text("No tasks assigned yet.", style: TextStyle(fontSize: 16, color: AppColors.textLight))),
-                ],
-              )
-            : Padding(
-                padding: const EdgeInsets.all(16),
-                child: ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: _tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = _tasks[index];
+    return ManagerBaseScreen(
+      appBar: const CustomAppBar(title: "Assigned Tasks"),
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: ['All', 'Assigned', 'In Progress', 'On Hold', 'Completed'].map((status) {
+                final isSelected = _statusFilter == status;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(status),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _statusFilter = status;
+                          _applyFilter();
+                        });
+                      }
+                    },
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                    labelStyle: TextStyle(color: isSelected ? AppColors.primary : AppColors.textSecondary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadTasks,
+              color: AppColors.primary,
+              child: _loading 
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredTasks.isEmpty 
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 100),
+                        Center(child: Text("No tasks found.", style: TextStyle(fontSize: 16, color: AppColors.textLight))),
+                      ],
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: _filteredTasks.length,
+                        itemBuilder: (context, index) {
+                          final task = _filteredTasks[index];
                     
                     String formattedTime = "Unknown Time";
                     if (task['scheduled_time'] != null) {
@@ -81,12 +127,14 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
                     if (task['priority'] == 'High') pColor = Colors.red;
                     if (task['priority'] == 'Low') pColor = Colors.green;
 
+                    final assignedUser = task['app_users']?['full_name'] ?? 'Unassigned';
+
                     return GestureDetector(
                       onTap: () async {
                         final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => TrackmanTaskDetailsScreen(task: Map<String, dynamic>.from(task)),
+                            builder: (_) => ManagerTaskDetailsScreen(task: Map<String, dynamic>.from(task)),
                           ),
                         );
                         if (result == true) {
@@ -115,7 +163,7 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
                               backgroundColor: pColor.withValues(alpha: 0.15),
                               radius: 26,
                               child: Icon(
-                                Icons.build,
+                                Icons.assignment_outlined,
                                 color: pColor,
                                 size: 26,
                               ),
@@ -142,6 +190,21 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.person_outline, size: 14, color: AppColors.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        assignedUser,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
                                     formattedTime,
                                     style: const TextStyle(
@@ -205,9 +268,12 @@ class _TrackmanTasksScreenState extends State<TrackmanTasksScreen> {
                       ),
                     );
                   },
-                ),
-              ),
-      ),
-    );
+                ), // Closes ListView.builder
+              ), // Closes Padding
+            ), // Closes RefreshIndicator
+          ), // Closes Expanded
+        ], // Closes children
+      ), // Closes Column
+    ); // Closes ManagerBaseScreen
   }
 }

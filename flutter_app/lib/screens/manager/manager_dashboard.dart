@@ -32,13 +32,17 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     try {
       final stats = await ApiService.fetchDashboardStats();
       
-      // Fetch open issues specific to Manager
-      final issuesResp = await Supabase.instance.client
+      final manager = await ApiService.fetchCurrentUserData();
+      var issuesQuery = Supabase.instance.client
           .from('trackman_issues')
           .select('id')
-          .eq('status', 'open')
-          .count();
+          .eq('status', 'open');
           
+      if (manager?.zone != null && manager!.zone!.isNotEmpty) {
+        issuesQuery = issuesQuery.eq('zone', manager.zone!);
+      }
+      
+      final issuesResp = await issuesQuery.count();
       final issuesCount = issuesResp.count;
 
       if (mounted) {
@@ -125,13 +129,15 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 child: const Icon(Icons.assignment_ind, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Manager Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-                  Text('Dispatch & Monitoring', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500)),
-                ],
-              ),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Manager Hub', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
+                      Text('Central Railway', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
             ],
           ),
         ],
@@ -149,13 +155,15 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: modules
-            .map((m) => Expanded(child: _buildActionCard(m)))
-            .toList()
-            .expand((w) => [w, const SizedBox(width: 10)])
-            .toList()
-          ..removeLast(),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: modules.map((m) => SizedBox(
+          width: (MediaQuery.of(context).size.width - 32 - (12 * 3)) / 4 < 70 
+              ? (MediaQuery.of(context).size.width - 32 - 12) / 2
+              : (MediaQuery.of(context).size.width - 32 - (12 * 3)) / 4,
+          child: _buildActionCard(m),
+        )).toList(),
       ),
     );
   }

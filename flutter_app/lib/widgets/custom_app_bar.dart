@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
+import '../main.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -20,7 +21,24 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.canPop(context);
+    final hasDrawer = Scaffold.maybeOf(context)?.hasDrawer ?? false;
+
     return AppBar(
+      leading: Builder(
+        builder: (context) {
+          if (canPop) {
+            return const BackButton(color: Colors.white);
+          } else if (hasDrawer) {
+            return IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
       backgroundColor: AppColors.primary,
       elevation: 0,
@@ -53,12 +71,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   ),
                 );
-                if (confirm == true) {
-                  await Supabase.instance.client.auth.signOut();
-                  if (context.mounted) {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  if (confirm == true) {
+                    Supabase.instance.client.auth.signOut();
+                    if (context.mounted) {
+                      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const AuthGate()),
+                        (route) => false,
+                      );
+                    }
                   }
-                }
               }
             },
             itemBuilder: (context) => [

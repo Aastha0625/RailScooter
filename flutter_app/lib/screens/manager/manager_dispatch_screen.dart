@@ -4,10 +4,13 @@ import '../../models/user.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../admin/admin_base_screen.dart';
 import 'manager_base_screen.dart';
+import 'manager_dispatch_history_screen.dart';
 
 class ManagerDispatchScreen extends StatefulWidget {
-  const ManagerDispatchScreen({super.key});
+  final String userRole;
+  const ManagerDispatchScreen({super.key, this.userRole = 'manager'});
 
   @override
   State<ManagerDispatchScreen> createState() => _ManagerDispatchScreenState();
@@ -25,12 +28,14 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
 
   Future<void> _fetchActiveDispatches() async {
     try {
+      final manager = await ApiService.fetchCurrentUserData();
+      
       final data = await Supabase.instance.client
           .from('vehicle_assignments')
           .select('''
             id,
             assigned_at,
-            app_users:assigned_user_id (id, full_name, employee_id),
+            app_users:assigned_user_id (id, full_name, employee_id, zone),
             vehicles:vehicle_id (id, vehicle_id, status)
           ''')
           .eq('is_active', true)
@@ -38,7 +43,14 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
 
       if (mounted) {
         setState(() {
-          _activeDispatches = data;
+          if (manager?.zone != null && manager!.zone!.isNotEmpty) {
+            _activeDispatches = data.where((d) {
+              final userZone = d['app_users']?['zone'] as String?;
+              return userZone == manager.zone;
+            }).toList();
+          } else {
+            _activeDispatches = data;
+          }
           _loading = false;
         });
       }
@@ -86,26 +98,52 @@ class _ManagerDispatchScreenState extends State<ManagerDispatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appBar = CustomAppBar(
+      title: 'Dispatch Vehicles',
+      additionalActions: [
+        IconButton(
+          icon: const Icon(Icons.history, color: Colors.white),
+          tooltip: 'Dispatch History',
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => ManagerDispatchHistoryScreen(userRole: widget.userRole)));
+          },
+        )
+      ],
+    );
+
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+        : _activeDispatches.isEmpty
+            ? _buildEmptyState()
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _activeDispatches.length,
+                itemBuilder: (context, index) {
+                  final dispatch = _activeDispatches[index];
+                  return _buildDispatchCard(dispatch);
+                },
+              );
+              
+    final fab = FloatingActionButton.extended(
+      onPressed: _showNewDispatchDialog,
+      backgroundColor: AppColors.primary,
+      icon: const Icon(Icons.send_rounded, color: Colors.white),
+      label: const Text('New Dispatch', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+    );
+
+    if (widget.userRole == 'admin') {
+      return AdminBaseScreen(
+        title: 'Dispatch Vehicles',
+        appBar: appBar,
+        body: body,
+        floatingActionButton: fab,
+      );
+    }
+
     return ManagerBaseScreen(
-      appBar: const CustomAppBar(title: 'Dispatch Vehicles'),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : _activeDispatches.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _activeDispatches.length,
-                  itemBuilder: (context, index) {
-                    final dispatch = _activeDispatches[index];
-                    return _buildDispatchCard(dispatch);
-                  },
-                ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showNewDispatchDialog,
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.send_rounded, color: Colors.white),
-        label: const Text('New Dispatch', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
+      appBar: appBar,
+      body: body,
+      floatingActionButton: fab,
     );
   }
 
@@ -222,8 +260,8 @@ void initState() {
     try {
       final manager = await ApiService.fetchCurrentUserData();
       
-      // Fetch Trackmen (filter by manager's division and only approved trackmen via ApiService)
-      final trackmenData = await ApiService.fetchUsers(division: manager?.division, role: 'trackman');
+      // Fetch Trackmen (filter by manager's division and zone, and only approved trackmen)
+      final trackmenData = await ApiService.fetchUsers(division: manager?.division, zone: manager?.zone, role: 'trackman');
 
       // Fetch Vehicles
       final vehiclesData = await Supabase.instance.client
@@ -298,7 +336,14 @@ void initState() {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Cannot create dispatch. Make sure there is at least one idle Trackman and one idle Vehicle available.', style: TextStyle(color: Colors.orange, fontSize: 13)),
+                    child: Text(
+                      _availableTrackmen.isEmpty && _availableVehicles.isEmpty 
+                        ? 'Cannot create dispatch: No idle Trackmen and no idle Vehicles available.'
+                        : _availableTrackmen.isEmpty 
+                          ? 'Cannot create dispatch: All Trackmen in your division are currently assigned to a vehicle. Recall a vehicle first.'
+                          : 'Cannot create dispatch: There are no idle Vehicles available. Recall a vehicle first.', 
+                      style: const TextStyle(color: Colors.orange, fontSize: 13)
+                    ),
                   )
                 else ...[
                   const Text('Select Trackman', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
@@ -310,7 +355,7 @@ void initState() {
                       fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
                     ),
-                    items: _availableTrackmen.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.fullName))).toList(),
+                    items: _availableTrackmen.map<DropdownMenuItem<String>>((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.fullName))).toList(),
                     onChanged: (val) {
                       if (val != null) setState(() => _selectedTrackmanId = val);
                     },

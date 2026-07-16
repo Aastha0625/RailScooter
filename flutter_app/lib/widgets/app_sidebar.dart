@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
+import '../main.dart';
 
 class SidebarItem {
   final IconData icon;
@@ -145,9 +146,12 @@ class _AppSidebarState extends State<AppSidebar> {
                         } else if (value == 'logout') {
                           final confirm = await _showLogoutConfirmation();
                           if (confirm == true) {
-                            await Supabase.instance.client.auth.signOut();
+                            Supabase.instance.client.auth.signOut();
                             if (mounted) {
-                              Navigator.of(context).popUntil((route) => route.isFirst);
+                              Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const AuthGate()),
+                                (route) => false,
+                              );
                             }
                           }
                         }

@@ -26,19 +26,19 @@ class PiScootApp extends StatelessWidget {
       title: 'PiScoot',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const _AuthGate(),
+      home: const AuthGate(),
     );
   }
 }
 
-class _AuthGate extends StatefulWidget {
-  const _AuthGate();
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
 
   @override
-  State<_AuthGate> createState() => _AuthGateState();
+  State<AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends State<_AuthGate> {
+class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();

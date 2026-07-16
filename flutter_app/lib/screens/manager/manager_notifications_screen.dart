@@ -3,18 +3,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
-import 'trackman_task_details_screen.dart';
+import 'manager_task_details_screen.dart';
 
-class TrackmanNotificationsScreen extends StatefulWidget {
-  const TrackmanNotificationsScreen({super.key});
+class ManagerNotificationsScreen extends StatefulWidget {
+  const ManagerNotificationsScreen({super.key});
 
   @override
-  State<TrackmanNotificationsScreen> createState() =>
-      _TrackmanNotificationsScreenState();
+  State<ManagerNotificationsScreen> createState() =>
+      _ManagerNotificationsScreenState();
 }
 
-class _TrackmanNotificationsScreenState
-    extends State<TrackmanNotificationsScreen> {
+class _ManagerNotificationsScreenState
+    extends State<ManagerNotificationsScreen> {
   List<Map<String, dynamic>> notifications = [];
   bool loading = true;
 
@@ -38,18 +38,18 @@ class _TrackmanNotificationsScreenState
       final broadcasts = await client
           .from('broadcast_messages')
           .select()
-          .or('target_role.eq.trackman,target_role.eq.all')
+          .or('target_role.eq.manager,target_role.eq.all')
           .order('created_at', ascending: false);
 
-      // Fetch active vehicle assignments for this trackman
-      final user = client.auth.currentUser;
+      // Fetch active vehicle assignments in this manager's zone
+      final manager = await ApiService.fetchCurrentUserData();
       final assignments = await client
           .from('vehicle_assignments')
-          .select('vehicle_id')
-          .eq('assigned_user_id', user!.id)
-          .eq('is_active', true);
+          .select('vehicle_id, app_users!inner(zone)')
+          .eq('is_active', true)
+          .eq('app_users.zone', manager?.zone ?? '');
       
-      final myVehicleIds = assignments.map((a) => a['vehicle_id']).toSet();
+      final myZoneVehicleIds = assignments.map((a) => a['vehicle_id']).toSet();
 
       // Fetch active vehicle alerts, then filter in Dart
       final allAlertsData = await client
@@ -58,7 +58,7 @@ class _TrackmanNotificationsScreenState
           .eq('is_acknowledged', false)
           .order('created_at', ascending: false);
 
-      final alerts = allAlertsData.where((a) => myVehicleIds.contains(a['vehicle_id'])).toList();
+      final alerts = allAlertsData.where((a) => myZoneVehicleIds.contains(a['vehicle_id'])).toList();
 
       final List<Map<String, dynamic>> allNotifications = [];
 
@@ -215,7 +215,7 @@ class _TrackmanNotificationsScreenState
                               final taskData = await ApiService.fetchTaskById(notification['task_id']);
                               if (mounted) Navigator.pop(context); // close dialog
                               if (taskData != null && mounted) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => TrackmanTaskDetailsScreen(task: taskData)));
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => ManagerTaskDetailsScreen(task: taskData)));
                               } else if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Task not found.')));
                               }
