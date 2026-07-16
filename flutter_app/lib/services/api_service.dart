@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -489,6 +490,7 @@ class ApiService {
     required String title,
     required String body,
     required String targetRole,
+    String? taskId,
   }) async {
     final uid = _sb.auth.currentUser?.id;
     await _sb.from('broadcast_messages').insert({
@@ -496,7 +498,14 @@ class ApiService {
       'body': body,
       'target_role': targetRole,
       'sent_by': uid,
+      if (taskId != null) 'task_id': taskId,
     });
+  }
+
+  static Future<Map<String, dynamic>?> fetchTaskById(String taskId) async {
+    final data = await _sb.from('trackman_tasks').select('*, app_users!trackman_tasks_assigned_to_fkey(full_name), vehicles(vehicle_id, variant)').eq('id', taskId).maybeSingle();
+    if (data == null) return null;
+    return Map<String, dynamic>.from(data);
   }
 
   // -------- TRACKMAN TASKS --------
@@ -508,7 +517,7 @@ class ApiService {
     String? division,
     String? zone,
   }) async {
-    var query = _sb.from('trackman_tasks').select('*, app_users(full_name), vehicles(vehicle_id, variant)');
+    var query = _sb.from('trackman_tasks').select('*, app_users!trackman_tasks_assigned_to_fkey(full_name), vehicles(vehicle_id, variant)');
     if (assignedToUserId != null) {
       query = query.eq('assigned_to', assignedToUserId);
     }
@@ -535,5 +544,19 @@ class ApiService {
 
   static Future<void> updateTaskStatus(String taskId, String status) async {
     await _sb.from('trackman_tasks').update({'status': status}).eq('id', taskId);
+  }
+
+  static Future<void> updateTask(String taskId, Map<String, dynamic> data) async {
+    await _sb.from('trackman_tasks').update(data).eq('id', taskId);
+  }
+
+  static Future<String> uploadTaskPhoto(String taskId, Uint8List imageBytes, String extension) async {
+    final fileName = 'task_${taskId}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    await _sb.storage.from('task_proofs').uploadBinary(
+      fileName, 
+      imageBytes,
+      fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+    );
+    return _sb.storage.from('task_proofs').getPublicUrl(fileName);
   }
 }

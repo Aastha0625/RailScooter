@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class ManagerTaskDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> task;
@@ -65,6 +67,14 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
     try {
       if (widget.task['id'] != null) {
         await ApiService.updateTaskStatus(widget.task['id'], newStatus);
+        if (value) {
+          await ApiService.sendBroadcast(
+            title: 'Task Completed',
+            body: 'Manager approved and completed the task "${widget.task['title']}".',
+            targetRole: 'trackman',
+            taskId: widget.task['id'],
+          );
+        }
       }
       setState(() {
         isCompleted = value;
@@ -82,6 +92,19 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
+
+    LatLng? _taskLocation;
+    final locStr = task['location'] ?? '';
+    if (locStr.contains(',')) {
+      final parts = locStr.split(',');
+      if (parts.length == 2) {
+        final lat = double.tryParse(parts[0].trim());
+        final lng = double.tryParse(parts[1].trim());
+        if (lat != null && lng != null) {
+          _taskLocation = LatLng(lat, lng);
+        }
+      }
+    }
 
     String formattedTime = "Unknown Time";
     if (task['scheduled_time'] != null) {
@@ -127,7 +150,141 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 16),
-                  _infoTile(Icons.location_on, "Location", task["location"] ?? "Unknown"),
+                  if (_taskLocation != null) ...[
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on, color: AppColors.primary, size: 20),
+                          SizedBox(width: 8),
+                          Text("Task Location", style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 160,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Stack(
+                          children: [
+                            FlutterMap(
+                              options: MapOptions(
+                                initialCenter: _taskLocation,
+                                initialZoom: 15.0,
+                                interactionOptions: const InteractionOptions(
+                                  flags: InteractiveFlag.none,
+                                ),
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.example.railscooter',
+                                ),
+                                MarkerLayer(
+                                  markers: [
+                                    Marker(
+                                      point: _taskLocation,
+                                      width: 40,
+                                      height: 40,
+                                      alignment: Alignment.topCenter,
+                                      child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Positioned.fill(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) => Dialog(
+                                        insetPadding: const EdgeInsets.all(16),
+                                        backgroundColor: Colors.transparent,
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(16),
+                                              child: SizedBox(
+                                                width: double.infinity,
+                                                height: MediaQuery.of(context).size.height * 0.7,
+                                                child: FlutterMap(
+                                                  options: MapOptions(
+                                                    initialCenter: _taskLocation!,
+                                                    initialZoom: 15.0,
+                                                  ),
+                                                  children: [
+                                                    TileLayer(
+                                                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                                      userAgentPackageName: 'com.example.railscooter',
+                                                    ),
+                                                    MarkerLayer(
+                                                      markers: [
+                                                        Marker(
+                                                          point: _taskLocation!,
+                                                          width: 40,
+                                                          height: 40,
+                                                          alignment: Alignment.topCenter,
+                                                          child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: -10,
+                                              right: -10,
+                                              child: IconButton(
+                                                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                                onPressed: () => Navigator.pop(context),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.fullscreen, size: 16, color: AppColors.primary),
+                                    SizedBox(width: 4),
+                                    Text("Expand Map", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ] else ...[
+                    _infoTile(Icons.location_on, "Location", task["location"] ?? "Unknown"),
+                  ],
                   _infoTile(Icons.schedule, "Scheduled Time", formattedTime),
                   _infoTile(Icons.flag, "Priority", task["priority"] ?? "Normal"),
                   _infoTile(Icons.assignment_turned_in, "Current Status", task["status"] ?? "Assigned"),
@@ -159,32 +316,91 @@ class _ManagerTaskDetailsScreenState extends State<ManagerTaskDetailsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            SwitchListTile(
-              value: isCompleted,
-              activeThumbColor: Colors.green,
-              title: const Text("Mark Task as Completed", style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: _updating ? const Text("Updating...") : const Text("Update task status manually"),
-              onChanged: _updating ? null : _toggleStatus,
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isCompleted ? Colors.green.withValues(alpha: 0.15) : Colors.orange.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                isCompleted ? "✅ Task Completed" : "⏳ Task Pending",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isCompleted ? Colors.green : Colors.orange,
+            if (task['subtasks'] != null && (task['subtasks'] as List).isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Checklist", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    ...(task['subtasks'] as List).map((st) {
+                      bool checked = st['is_completed'] == true;
+                      return Row(
+                        children: [
+                          Icon(checked ? Icons.check_box : Icons.check_box_outline_blank, color: checked ? Colors.green : Colors.grey),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(st['title'], style: TextStyle(color: checked ? AppColors.textSecondary : AppColors.textPrimary, decoration: checked ? TextDecoration.lineThrough : null))),
+                        ],
+                      );
+                    }),
+                  ],
                 ),
               ),
-            ),
+            ],
+            if (task['completion_photo_url'] != null || task['completion_notes'] != null) ...[
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Proof of Completion", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    if (task['completion_notes'] != null && task['completion_notes'].toString().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text("Notes: ${task['completion_notes']}", style: const TextStyle(color: AppColors.textPrimary)),
+                      ),
+                    if (task['completion_photo_url'] != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(task['completion_photo_url'], width: double.infinity, height: 200, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Text("Failed to load photo", style: TextStyle(color: Colors.red))),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            if (task['status'] == 'Review Pending')
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _updating ? null : () => _toggleStatus(true),
+                  icon: _updating ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.verified, color: Colors.white),
+                  label: Text(_updating ? "Approving..." : "Approve & Complete Task", style: const TextStyle(color: Colors.white, fontSize: 16)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                ),
+              )
+            else if (task['status'] == 'Completed')
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
+                child: const Text("✅ Task Approved & Completed", textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
+                child: Text("⏳ Task Status: ${task['status']}", textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange)),
+              ),
           ],
         ),
       ),

@@ -23,6 +23,7 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController(); // For the specific map coordinates/string
+  final List<TextEditingController> _subtaskCtrls = [];
 
   List<AppUser> _trackmen = [];
   List<Vehicle> _vehicles = [];
@@ -54,6 +55,9 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _locationCtrl.dispose();
+    for (var ctrl in _subtaskCtrls) {
+      ctrl.dispose();
+    }
     super.dispose();
   }
 
@@ -159,6 +163,11 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
         _selectedTime!.hour, _selectedTime!.minute,
       );
 
+      final subtasksList = _subtaskCtrls
+          .where((c) => c.text.trim().isNotEmpty)
+          .map((c) => {'title': c.text.trim(), 'is_completed': false})
+          .toList();
+
       final taskData = {
         'title': _titleCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
@@ -172,14 +181,27 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
         'zone': _selectedZone,
         'division': _selectedDivision,
         'region': _selectedRegion,
+        'subtasks': subtasksList,
       };
 
       try {
-        await ApiService.createTask(taskData);
+        final createdTask = await ApiService.createTask(taskData);
+        await ApiService.sendBroadcast(
+          title: 'New Task Assigned',
+          body: 'A new task "${taskData['title']}" has been assigned to ${_selectedTrackman!.fullName}.',
+          targetRole: 'trackman',
+          taskId: createdTask['id'],
+        );
       } catch (e) {
         if (e.toString().contains('assigned_by') || e.toString().contains('column')) {
           taskData.remove('assigned_by');
-          await ApiService.createTask(taskData);
+          final createdTask = await ApiService.createTask(taskData);
+          await ApiService.sendBroadcast(
+            title: 'New Task Assigned',
+            body: 'A new task "${taskData['title']}" has been assigned to ${_selectedTrackman!.fullName}.',
+            targetRole: 'trackman',
+            taskId: createdTask['id'],
+          );
         } else {
           rethrow;
         }
@@ -296,6 +318,42 @@ class _ManagerTaskAssignmentScreenState extends State<ManagerTaskAssignmentScree
                   _buildTextField(_titleCtrl, 'Task Title', Icons.title, 'Enter a clear task title'),
                   const SizedBox(height: 16),
                   _buildTextField(_descCtrl, 'Description', Icons.description, 'Describe the task requirements...', maxLines: 3),
+                  
+                  const SizedBox(height: 16),
+                  const Text('Checklists / Sub-tasks (Optional)', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  ...List.generate(_subtaskCtrls.length, (index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(_subtaskCtrls[index], 'Sub-task ${index + 1}', Icons.check_box_outline_blank, 'E.g., Check bolts'),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            onPressed: () {
+                              setState(() {
+                                _subtaskCtrls[index].dispose();
+                                _subtaskCtrls.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _subtaskCtrls.add(TextEditingController());
+                      });
+                    },
+                    icon: const Icon(Icons.add, color: AppColors.primary),
+                    label: const Text('Add Sub-task', style: TextStyle(color: AppColors.primary)),
+                  ),
+                  const SizedBox(height: 16),
+
                   const Text('Location', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   

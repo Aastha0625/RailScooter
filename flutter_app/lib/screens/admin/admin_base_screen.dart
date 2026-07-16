@@ -12,7 +12,9 @@ import 'admin_broadcast_screen.dart';
 import 'admin_tasks_screen.dart';
 import 'admin_activity_screen.dart';
 import '../alerts/alerts_rules_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'admin_profile_screen.dart';
+import 'admin_notifications_screen.dart';
 import '../../widgets/custom_app_bar.dart';
 
 class AdminBaseScreen extends StatefulWidget {
@@ -35,11 +37,41 @@ class AdminBaseScreen extends StatefulWidget {
 
 class _AdminBaseScreenState extends State<AdminBaseScreen> {
   String _adminName = 'Admin';
+  bool _hasNotifications = false;
 
   @override
   void initState() {
     super.initState();
     _loadAdminName();
+    _checkNotifications();
+  }
+
+  Future<void> _checkNotifications() async {
+    try {
+      final client = Supabase.instance.client;
+      final prefs = await SharedPreferences.getInstance();
+      final lastReadStr = prefs.getString('last_admin_notification_read_time');
+      DateTime lastRead;
+      if (lastReadStr != null) {
+        lastRead = DateTime.parse(lastReadStr);
+      } else {
+        lastRead = DateTime.now();
+        await prefs.setString('last_admin_notification_read_time', lastRead.toIso8601String());
+      }
+
+      final broadcastsResponse = await client
+          .from('broadcast_messages')
+          .select('id, created_at')
+          .or('target_role.eq.admin,target_role.eq.manager,target_role.eq.trackman,target_role.eq.all');
+
+      final hasUnreadBroadcasts = broadcastsResponse
+          .any((b) => DateTime.parse(b['created_at']).isAfter(lastRead));
+
+      if (!mounted) return;
+      setState(() => _hasNotifications = hasUnreadBroadcasts);
+    } catch (e) {
+      debugPrint('Notification error: $e');
+    }
   }
 
   Future<void> _loadAdminName() async {
@@ -114,6 +146,32 @@ class _AdminBaseScreenState extends State<AdminBaseScreen> {
     return ResponsiveScaffold(
       appBar: widget.appBar ?? CustomAppBar(
         title: widget.title!,
+        additionalActions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (_) => const AdminNotificationsScreen())
+              ).then((_) => _checkNotifications());
+            },
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_outlined, color: Colors.white, size: 26),
+                if (_hasNotifications)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
         onProfileTap: () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProfileScreen()));
         },

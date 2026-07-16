@@ -54,25 +54,28 @@ class _TrackmanSafetyScreenState extends State<TrackmanSafetyScreen> {
               ),
               child: Column(
                 children: _checks.keys.map((key) {
-                  return CheckboxListTile(
-                    title: Text(
-                      key,
-                      style: TextStyle(
-                        color: _checks[key]! ? AppColors.textPrimary : AppColors.textSecondary,
-                        fontWeight: _checks[key]! ? FontWeight.w600 : FontWeight.normal,
-                        decoration: _checks[key]! ? TextDecoration.lineThrough : null,
-                        decorationColor: Colors.green,
+                  return Material(
+                    color: Colors.transparent,
+                    child: CheckboxListTile(
+                      title: Text(
+                        key,
+                        style: TextStyle(
+                          color: _checks[key]! ? AppColors.textPrimary : AppColors.textSecondary,
+                          fontWeight: _checks[key]! ? FontWeight.w600 : FontWeight.normal,
+                          decoration: _checks[key]! ? TextDecoration.lineThrough : null,
+                          decorationColor: Colors.green,
+                        ),
                       ),
+                      value: _checks[key],
+                      activeColor: Colors.green,
+                      checkColor: Colors.white,
+                      side: const BorderSide(color: AppColors.textLight),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          _checks[key] = value ?? false;
+                        });
+                      },
                     ),
-                    value: _checks[key],
-                    activeColor: Colors.green,
-                    checkColor: Colors.white,
-                    side: const BorderSide(color: AppColors.textLight),
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _checks[key] = value ?? false;
-                      });
-                    },
                   );
                 }).toList(),
               ),

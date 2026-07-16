@@ -17,7 +17,10 @@ class ManagerTasksScreen extends StatefulWidget {
 class _ManagerTasksScreenState extends State<ManagerTasksScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _tasks = [];
+  List<Map<String, dynamic>> _filteredTasks = [];
   AppUser? _manager;
+  
+  String _statusFilter = 'All';
 
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _ManagerTasksScreenState extends State<ManagerTasksScreen> {
       if (mounted) {
         setState(() {
           _tasks = tasks;
+          _applyFilter();
           _loading = false;
         });
       }
@@ -49,30 +53,69 @@ class _ManagerTasksScreenState extends State<ManagerTasksScreen> {
     }
   }
 
+  void _applyFilter() {
+    if (_statusFilter == 'All') {
+      _filteredTasks = List.from(_tasks);
+    } else if (_statusFilter == 'In Progress') {
+      _filteredTasks = _tasks.where((t) => t['status'] == 'In Progress' || t['status'] == 'Review Pending').toList();
+    } else {
+      _filteredTasks = _tasks.where((t) => t['status'] == _statusFilter).toList();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ManagerBaseScreen(
       appBar: const CustomAppBar(title: "Assigned Tasks"),
-      body: RefreshIndicator(
-        onRefresh: _loadTasks,
-        color: AppColors.primary,
-        child: _loading 
-          ? const Center(child: CircularProgressIndicator())
-          : _tasks.isEmpty 
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 100),
-                  Center(child: Text("No tasks found in your region.", style: TextStyle(fontSize: 16, color: AppColors.textLight))),
-                ],
-              )
-            : Padding(
-                padding: const EdgeInsets.all(16),
-                child: ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: _tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = _tasks[index];
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: ['All', 'Assigned', 'In Progress', 'On Hold', 'Completed'].map((status) {
+                final isSelected = _statusFilter == status;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(status),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _statusFilter = status;
+                          _applyFilter();
+                        });
+                      }
+                    },
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                    labelStyle: TextStyle(color: isSelected ? AppColors.primary : AppColors.textSecondary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadTasks,
+              color: AppColors.primary,
+              child: _loading 
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredTasks.isEmpty 
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 100),
+                        Center(child: Text("No tasks found.", style: TextStyle(fontSize: 16, color: AppColors.textLight))),
+                      ],
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: _filteredTasks.length,
+                        itemBuilder: (context, index) {
+                          final task = _filteredTasks[index];
                     
                     String formattedTime = "Unknown Time";
                     if (task['scheduled_time'] != null) {
@@ -225,9 +268,12 @@ class _ManagerTasksScreenState extends State<ManagerTasksScreen> {
                       ),
                     );
                   },
-                ),
-              ),
-      ),
-    );
+                ), // Closes ListView.builder
+              ), // Closes Padding
+            ), // Closes RefreshIndicator
+          ), // Closes Expanded
+        ], // Closes children
+      ), // Closes Column
+    ); // Closes ManagerBaseScreen
   }
 }

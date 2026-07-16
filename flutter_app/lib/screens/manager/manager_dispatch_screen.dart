@@ -298,7 +298,14 @@ void initState() {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Cannot create dispatch. Make sure there is at least one idle Trackman and one idle Vehicle available.', style: TextStyle(color: Colors.orange, fontSize: 13)),
+                    child: Text(
+                      _availableTrackmen.isEmpty && _availableVehicles.isEmpty 
+                        ? 'Cannot create dispatch: No idle Trackmen and no idle Vehicles available.'
+                        : _availableTrackmen.isEmpty 
+                          ? 'Cannot create dispatch: All Trackmen in your division are currently assigned to a vehicle. Recall a vehicle first.'
+                          : 'Cannot create dispatch: There are no idle Vehicles available. Recall a vehicle first.', 
+                      style: const TextStyle(color: Colors.orange, fontSize: 13)
+                    ),
                   )
                 else ...[
                   const Text('Select Trackman', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),

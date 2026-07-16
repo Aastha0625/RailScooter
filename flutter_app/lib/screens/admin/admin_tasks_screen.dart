@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
-import '../trackman/trackman_task_details_screen.dart';
+import 'admin_task_details_screen.dart';
 import 'admin_base_screen.dart';
 
 class AdminTasksScreen extends StatefulWidget {
@@ -82,7 +82,7 @@ class _AdminTasksScreenState extends State<AdminTasksScreen> {
       onTap: () async {
         final result = await Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => TrackmanTaskDetailsScreen(task: task)),
+          MaterialPageRoute(builder: (_) => AdminTaskDetailsScreen(task: task)),
         );
         if (result == true) {
           _loadTasks();
